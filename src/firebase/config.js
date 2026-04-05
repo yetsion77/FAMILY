@@ -5,6 +5,7 @@ import { getStorage } from 'firebase/storage';
 const firebaseConfig = {
   apiKey: "AIzaSyCWQ-U40ReA6EDm_p7hczlOoIbFMjU4vRo",
   authDomain: "family-5e6fd.firebaseapp.com",
+  databaseURL: "https://family-5e6fd-default-rtdb.europe-west1.firebasedatabase.app",
   projectId: "family-5e6fd",
   storageBucket: "family-5e6fd.firebasestorage.app",
   messagingSenderId: "1012035561268",
