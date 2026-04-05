@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { X, Save, Image as ImageIcon } from 'lucide-react';
+import { X, Save, Eye } from 'lucide-react';
 import { uploadPhoto } from '../firebase/api';
 
-const DetailsModal = ({ person, onClose, onSave, isEditMode }) => {
+const DetailsModal = ({ person, onClose, onSave, onQuickAdd, onFocusTarget, isEditMode }) => {
   const [formData, setFormData] = useState({ ...person });
   const [imageFile, setImageFile] = useState(null);
   const [saving, setSaving] = useState(false);
@@ -74,6 +74,20 @@ const DetailsModal = ({ person, onClose, onSave, isEditMode }) => {
             <button type="submit" className="primary-btn" disabled={saving}>
               <Save size={18} /> {saving ? 'שומר...' : 'שמור שינויים'}
             </button>
+
+            {/* איזור הוספת קרובים (יוצג רק אם האדם כבר נשמר בעץ ויש לו ID) */}
+            {person.id && (
+               <div style={{ marginTop: '2.5rem', borderTop: '1px solid #cbd5e0', paddingTop: '1.5rem' }}>
+                 <h3 style={{ marginBottom: '1rem', color: 'var(--primary-color)' }}>הוספת קרובים</h3>
+                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.8rem' }}>
+                   <button type="button" className="mode-toggle" style={{background: '#718096'}} onClick={() => onQuickAdd(person.id, 'father')}>אבא</button>
+                   <button type="button" className="mode-toggle" style={{background: '#718096'}} onClick={() => onQuickAdd(person.id, 'mother')}>אמא</button>
+                   <button type="button" className="mode-toggle" style={{background: '#718096'}} onClick={() => onQuickAdd(person.id, 'spouse')}>בן/בת זוג</button>
+                   <button type="button" className="mode-toggle" style={{background: '#718096'}} onClick={() => onQuickAdd(person.id, 'child')}>ילד/ה</button>
+                   <button type="button" className="mode-toggle" style={{background: '#718096'}} onClick={() => onQuickAdd(person.id, 'sibling')}>אח/ות</button>
+                 </div>
+               </div>
+            )}
           </form>
         ) : (
           <div>
@@ -84,12 +98,20 @@ const DetailsModal = ({ person, onClose, onSave, isEditMode }) => {
                 style={{width: '150px', height: '150px', borderRadius: '50%', objectFit: 'cover', border: '4px solid var(--secondary-color)'}}
               />
               <h2 style={{fontSize: '2rem', marginTop: '1rem'}}>{person.name}</h2>
-              <p className="person-dates" style={{fontSize: '1rem'}}>{person.birthYear} - {person.deathYear || 'ממשיך/ה לחיות'}</p>
+              <p className="person-dates" style={{fontSize: '1rem', marginBottom: '1rem'}}>{person.birthYear} - {person.deathYear || 'היום'}</p>
+              
+              <button 
+                onClick={() => onFocusTarget(person.id)} 
+                className="primary-btn" 
+                style={{margin: '0 auto', display: 'flex', alignItems: 'center'}}
+              >
+                <Eye size={18} /> התמקד בעץ שלו
+              </button>
             </div>
             
             <div style={{background: '#f8fafc', padding: '1.5rem', borderRadius: '12px', lineHeight: '1.8'}}>
-              <h3 style={{fontSize: '1.2rem', marginBottom: '1rem'}}>סיפור חיים</h3>
-              <p>{person.details || "לא הוזנו פרטים עליו."}</p>
+              <h3 style={{fontSize: '1.2rem', marginBottom: '1rem'}}>קריאה נוספת</h3>
+              <p style={{whiteSpace: 'pre-wrap'}}>{person.details || "לא הוזנו פרטים עליו."}</p>
             </div>
           </div>
         )}
