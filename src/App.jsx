@@ -78,7 +78,7 @@ function App() {
       // Better: Create an empty instance ready to save. 
       // Link logic: When this template is saved, we must THEN update the sourcePerson. 
       // This requires special flag, so for simplicity we just auto-create a placeholder and then edit it!
-      const doAutoLink = async async () => {
+      const doAutoLink = async () => {
         const newDoc = await addFamilyMember({name: 'אבא של ' + sourcePerson.name, gender: 'male'});
         sourcePerson.fatherId = newDoc.id;
         await updateFamilyMember(sourcePerson.id, sourcePerson);
@@ -90,7 +90,7 @@ function App() {
     }
 
     if (relationType === 'mother') {
-      const doAutoLink = async async () => {
+      const doAutoLink = async () => {
         const newDoc = await addFamilyMember({name: 'אמא של ' + sourcePerson.name, gender: 'female'});
         sourcePerson.motherId = newDoc.id;
         await updateFamilyMember(sourcePerson.id, sourcePerson);
@@ -102,7 +102,7 @@ function App() {
     }
 
     if (relationType === 'spouse') {
-      const doAutoLink = async async () => {
+      const doAutoLink = async () => {
         const newDoc = await addFamilyMember({name: 'בן/בת זוג של ' + sourcePerson.name, spouseId: sourcePerson.id});
         sourcePerson.spouseId = newDoc.id;
         await updateFamilyMember(sourcePerson.id, sourcePerson);
