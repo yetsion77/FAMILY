@@ -50,8 +50,18 @@ p { line-height: 1.6; }
   transform: translateY(-2px);
 }
 
+.gender-male {
+  border: 2px solid #74b9ff !important;
+  background: rgba(116, 185, 255, 0.1) !important;
+}
+
+.gender-female {
+  border: 2px solid #ff7675 !important;
+  background: rgba(255, 118, 117, 0.1) !important;
+}
+
 .app-container {
-  max-width: 1200px;
+  max-width: 1400px;
   margin: 0 auto;
   padding: 2rem;
   height: 100vh;
@@ -94,11 +104,12 @@ p { line-height: 1.6; }
   padding: 2rem;
   display: flex;
   justify-content: center;
-  align-items: center;
+  /* Remove alignItems center to allow vertical panning easily if tree is tall */
+  min-height: 600px;
 }
 
 .person-node {
-  width: 140px;
+  width: 150px;
   text-align: center;
   cursor: pointer;
   position: relative;
@@ -154,12 +165,12 @@ p { line-height: 1.6; }
 
 .form-group { margin-bottom: 1.5rem; }
 .form-label { display: block; margin-bottom: 0.5rem; font-weight: 500; color: var(--primary-color); }
-.form-input, .form-textarea {
+.form-input, .form-textarea, .form-select {
   width: 100%; padding: 0.75rem 1rem; border: 1px solid #cbd5e0;
   border-radius: 8px; font-family: inherit; font-size: 1rem;
   transition: var(--transition); background: white;
 }
-.form-input:focus, .form-textarea:focus {
+.form-input:focus, .form-textarea:focus, .form-select:focus {
   outline: none; border-color: var(--secondary-color);
   box-shadow: 0 0 0 3px rgba(230, 126, 34, 0.2);
 }
@@ -168,23 +179,9 @@ p { line-height: 1.6; }
   background: var(--secondary-color); color: white; border: none;
   padding: 0.75rem 1.5rem; border-radius: 8px; font-size: 1rem;
   font-weight: 700; cursor: pointer; transition: var(--transition);
-  display: flex; align-items: center; gap: 0.5rem;
+  display: flex; align-items: center; justify-content: center; gap: 0.5rem;
 }
 .primary-btn:hover { background: #d35400; transform: translateY(-2px); }
-
-.photo-gallery {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-  gap: 1rem;
-  margin-top: 1.5rem;
-}
-.gallery-img {
-  width: 100%;
-  height: 150px;
-  object-fit: cover;
-  border-radius: 8px;
-  box-shadow: var(--shadow-sm);
-}
 
 /* Lines connecting nodes */
 .tree-line-horizontal {

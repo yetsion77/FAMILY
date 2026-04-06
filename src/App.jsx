@@ -18,7 +18,6 @@ function App() {
     const data = await getFamilyMembers();
     setPeople(data);
     
-    // Default focus to the first person if none set
     if (!focusId && data.length > 0) setFocusId(data[0].id);
     setLoading(false);
   };
@@ -27,17 +26,11 @@ function App() {
     loadData();
   }, []);
 
-  const handlePersonClick = (person) => {
-    setSelectedPerson(person);
-  };
-
-  const handleCloseModal = () => {
-    setSelectedPerson(null);
-  };
-
+  const handlePersonClick = (person) => setSelectedPerson(person);
+  const handleCloseModal = () => setSelectedPerson(null);
+  
   const handleFocusTarget = (id) => {
     setFocusId(id);
-    setSelectedPerson(null);
   }
 
   const handleSavePerson = async (updatedData) => {
@@ -47,7 +40,6 @@ function App() {
     } else {
       savedPerson = await addFamilyMember(updatedData);
       
-      // Update spouse bi-directionally if required
       if (savedPerson.spouseId) {
         const spouseObj = people.find(p => p.id === savedPerson.spouseId);
         if (spouseObj) {
@@ -58,77 +50,82 @@ function App() {
     }
     await loadData();
     setSelectedPerson(null);
-    setFocusId(savedPerson.id); // focus on newly edited person
+    setFocusId(savedPerson.id);
   };
 
   const handleAddOriginPerson = () => {
     setSelectedPerson({
-      name: '', birthYear: '', deathYear: '', details: '', photoUrl: '',
+      name: '', gender: 'male', birthYear: '', deathYear: '', details: '', photoUrl: '',
       fatherId: null, motherId: null, spouseId: null, parentId: null
     });
   };
 
-  const handleQuickAdd = (sourcePersonId, relationType) => {
-    const sourcePerson = people.find(p => p.id === sourcePersonId);
-    let template = { name: '', birthYear: '', deathYear: '', details: '', photoUrl: '' };
-
+  // מנגנון הוספת קרובים משודרג עם Smart Adoption
+  const handleAddSpecificRelative = async (sourceId, relationType, newPersonData) => {
+    const sourcePerson = people.find(p => p.id === sourceId);
+    if (!sourcePerson) return;
+    
+    let newDoc = await addFamilyMember(newPersonData);
+    let updatedSource = { ...sourcePerson };
+    
     if (relationType === 'father') {
-      // Create a father for source, so source's fatherId becomes the new id
-      // Since new person needs to be created first, we provide a hook or we save directly?
-      // Better: Create an empty instance ready to save. 
-      // Link logic: When this template is saved, we must THEN update the sourcePerson. 
-      // This requires special flag, so for simplicity we just auto-create a placeholder and then edit it!
-      const doAutoLink = async () => {
-        const newDoc = await addFamilyMember({name: 'אבא של ' + sourcePerson.name, gender: 'male'});
-        sourcePerson.fatherId = newDoc.id;
-        await updateFamilyMember(sourcePerson.id, sourcePerson);
-        await loadData();
-        setSelectedPerson(newDoc); // open modal to fill details
+      updatedSource.fatherId = newDoc.id;
+      await updateFamilyMember(updatedSource.id, updatedSource);
+    } 
+    else if (relationType === 'mother') {
+      updatedSource.motherId = newDoc.id;
+      await updateFamilyMember(updatedSource.id, updatedSource);
+    }
+    else if (relationType === 'spouse') {
+      // 1. קשר את בן הזוג המקורי לחדש
+      updatedSource.spouseId = newDoc.id;
+      await updateFamilyMember(updatedSource.id, updatedSource);
+      
+      // 2. קשר את בן הזוג החדש בחזרה למקורי
+      let updatedNewDoc = { ...newDoc, spouseId: updatedSource.id };
+      await updateFamilyMember(updatedNewDoc.id, updatedNewDoc);
+      
+      // 3. אימוץ שיוך אוטומטי - ילדים של המקור מקבלים את בן הזוג החדש
+      const childrenToUpdate = people.filter(p => p.fatherId === sourceId || p.motherId === sourceId);
+      for (const child of childrenToUpdate) {
+        let childUpdated = { ...child };
+        let madeChange = false;
+        
+        if (child.fatherId === sourceId && !child.motherId && newPersonData.gender === 'female') {
+          childUpdated.motherId = newDoc.id; madeChange = true;
+        } else if (child.motherId === sourceId && !child.fatherId && newPersonData.gender === 'male') {
+          childUpdated.fatherId = newDoc.id; madeChange = true;
+        } else if (child.fatherId === sourceId && !child.motherId) {
+          childUpdated.motherId = newDoc.id; madeChange = true;
+        } else if (child.motherId === sourceId && !child.fatherId) {
+          childUpdated.fatherId = newDoc.id; madeChange = true;
+        }
+
+        if (madeChange) await updateFamilyMember(childUpdated.id, childUpdated);
       }
-      doAutoLink();
-      return;
     }
-
-    if (relationType === 'mother') {
-      const doAutoLink = async () => {
-        const newDoc = await addFamilyMember({name: 'אמא של ' + sourcePerson.name, gender: 'female'});
-        sourcePerson.motherId = newDoc.id;
-        await updateFamilyMember(sourcePerson.id, sourcePerson);
-        await loadData();
-        setSelectedPerson(newDoc);
+    else if (relationType === 'child') {
+      let childUpdate = { ...newDoc };
+      if (sourcePerson.gender === 'male') {
+        childUpdate.fatherId = sourceId;
+        if (sourcePerson.spouseId) childUpdate.motherId = sourcePerson.spouseId;
+      } else if (sourcePerson.gender === 'female') {
+        childUpdate.motherId = sourceId;
+        if (sourcePerson.spouseId) childUpdate.fatherId = sourcePerson.spouseId;
+      } else {
+        childUpdate.fatherId = sourceId;
       }
-      doAutoLink();
-      return;
+      await updateFamilyMember(childUpdate.id, childUpdate);
+    }
+    else if (relationType === 'sibling') {
+      let siblingUpdate = { ...newDoc };
+      if (sourcePerson.fatherId) siblingUpdate.fatherId = sourcePerson.fatherId;
+      if (sourcePerson.motherId) siblingUpdate.motherId = sourcePerson.motherId;
+      await updateFamilyMember(siblingUpdate.id, siblingUpdate);
     }
 
-    if (relationType === 'spouse') {
-      const doAutoLink = async () => {
-        const newDoc = await addFamilyMember({name: 'בן/בת זוג של ' + sourcePerson.name, spouseId: sourcePerson.id});
-        sourcePerson.spouseId = newDoc.id;
-        await updateFamilyMember(sourcePerson.id, sourcePerson);
-        await loadData();
-        setSelectedPerson(newDoc);
-      }
-      doAutoLink();
-      return;
-    }
-
-    if (relationType === 'child') {
-      const parentIsMale = true; // simplifying logic
-      // In a real app we'd check gender, but let's just assign fatherId for now based on whoever clicked it.
-      // Better: we can just use parentId legacy field, or fatherId arbitrarily.
-      template.fatherId = sourcePerson.id;
-      if (sourcePerson.spouseId) template.motherId = sourcePerson.spouseId; // assign both!
-      setSelectedPerson(template); // opens modal for the child directly
-      return;
-    }
-
-    if (relationType === 'sibling') {
-      template.fatherId = sourcePerson.fatherId;
-      template.motherId = sourcePerson.motherId;
-      setSelectedPerson(template);
-      return;
-    }
+    await loadData();
+    setSelectedPerson(null);
   };
 
   return (
@@ -138,7 +135,7 @@ function App() {
       {isEditMode && people.length === 0 && (
         <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1rem' }}>
           <button className="primary-btn" onClick={handleAddOriginPerson}>
-            <UserPlus size={18} /> התחל את עץ המשפחה
+            <UserPlus size={18} /> התחל את עץ המשפחה החדש
           </button>
         </div>
       )}
@@ -165,7 +162,7 @@ function App() {
           person={selectedPerson} 
           onClose={handleCloseModal} 
           onSave={handleSavePerson}
-          onQuickAdd={handleQuickAdd}
+          onQuickAdd={handleAddSpecificRelative}
           onFocusTarget={handleFocusTarget}
           isEditMode={isEditMode}
         />
