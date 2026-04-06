@@ -121,13 +121,18 @@ const DetailsModal = ({ person, onClose, onSave, onQuickAdd, onFocusTarget, isEd
                    <label className="form-label">שם</label>
                    <input type="text" className="form-input" value={newRelData.name} onChange={e => setNewRelData({...newRelData, name: e.target.value})} autoFocus placeholder="לדוגמה: משה כהן" />
                  </div>
-                 <div className="form-group">
-                   <label className="form-label">מגדר</label>
-                   <select className="form-select" value={newRelData.gender} onChange={e => setNewRelData({...newRelData, gender: e.target.value})}>
-                     <option value="male">זכר</option>
-                     <option value="female">נקבה</option>
-                   </select>
-                 </div>
+                 
+                 {/* Only show gender for sibling and child */}
+                 {['child', 'sibling'].includes(addingType) && (
+                   <div className="form-group">
+                     <label className="form-label">מגדר</label>
+                     <select className="form-select" value={newRelData.gender} onChange={e => setNewRelData({...newRelData, gender: e.target.value})}>
+                       <option value="male">זכר</option>
+                       <option value="female">נקבה</option>
+                     </select>
+                   </div>
+                 )}
+                 
                  <div style={{ display: 'flex', gap: '1rem' }}>
                    <button type="button" className="primary-btn" onClick={submitQuickAdd}>שמור וחבר לאילן</button>
                    <button type="button" className="mode-toggle" style={{ background: '#a0aec0' }} onClick={() => setAddingType(null)}>ביטול</button>

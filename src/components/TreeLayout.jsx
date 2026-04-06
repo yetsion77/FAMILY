@@ -16,7 +16,7 @@ const AncestorsTree = ({ personId, people, onPersonClick, level = 0 }) => {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative' }}>
-      <div style={{ display: 'flex', gap: `${3 * scale}rem`, position: 'relative', paddingBottom: `${2 * scale}rem` }}>
+      <div style={{ display: 'flex', gap: `${4 * scale}rem`, position: 'relative', paddingBottom: `${3 * scale}rem` }}>
         {father && (
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
             <AncestorsTree personId={father.id} people={people} onPersonClick={onPersonClick} level={level + 1} />
@@ -37,12 +37,12 @@ const AncestorsTree = ({ personId, people, onPersonClick, level = 0 }) => {
 
         {/* קו מחבר בין ההורים */}
         {father && mother && (
-          <div className="tree-line-horizontal" style={{ bottom: `${2 * scale}rem`, left: '25%', width: '50%', height: '2px', zIndex: 1 }} />
+          <div className="tree-line-horizontal" style={{ bottom: `${3 * scale}rem`, left: '25%', width: '50%', height: '2px', zIndex: 1 }} />
         )}
       </div>
 
       {/* קו היורד מההורים (או הורה בודד) למטה אל הילד */}
-      <div className="tree-line-vertical" style={{ position: 'absolute', bottom: 0, height: `${2 * scale}rem`, left: '50%', zIndex: 1 }} />
+      <div className="tree-line-vertical" style={{ position: 'absolute', bottom: 0, height: `${3 * scale}rem`, left: '50%', zIndex: 1 }} />
     </div>
   );
 };
@@ -66,7 +66,7 @@ const TreeLayout = ({ people, onPersonClick, focusId }) => {
   );
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: '2rem' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: '1rem' }}>
       
       {/* 1. עץ השורשים הרקורסיבי מלמעלה */}
       <div style={{ marginBottom: '0' }}>
@@ -74,7 +74,7 @@ const TreeLayout = ({ people, onPersonClick, focusId }) => {
       </div>
 
       {/* 2. שורת המרכז: אחים + דמות מרכזית + בני זוג */}
-      <div style={{ display: 'flex', gap: '3rem', alignItems: 'center', position: 'relative', marginTop: '2rem' }}>
+      <div style={{ display: 'flex', gap: '3rem', alignItems: 'center', position: 'relative', marginTop: '2.5rem' }}>
         
         {/* אחים בצד ימין (RTL) */}
         {siblings.length > 0 && (
@@ -106,20 +106,36 @@ const TreeLayout = ({ people, onPersonClick, focusId }) => {
 
       {/* 3. שורת ילדים יורדת מהתא המשפחתי */}
       {children.length > 0 && (
-        <div style={{ display: 'flex', gap: '2rem', position: 'relative', marginTop: '3rem' }}>
+        <div style={{ display: 'flex', gap: '3rem', position: 'relative', marginTop: '4rem' }}>
           {/* קו עליון שיורד מהתא המשפחתי */}
-          <div style={{ position: 'absolute', top: '-3rem', left: '50%', width: '2px', height: '3rem', background: '#cbd5e0' }} />
+          <div style={{ position: 'absolute', top: '-4rem', left: '50%', width: '2px', height: '4rem', background: '#cbd5e0' }} />
           
           {children.length > 1 && (
             <div className="tree-line-horizontal" style={{ top: '-1.5rem', left: `calc(50% / ${children.length})`, width: `calc(100% - 100% / ${children.length})`, height: '2px', background: '#cbd5e0' }} />
           )}
 
-          {children.map(child => (
-            <div key={child.id} style={{ position: 'relative' }}>
-              <div style={{ position: 'absolute', top: '-1.5rem', left: '50%', width: '2px', height: '1.5rem', background: '#cbd5e0' }} />
-              <div style={{transform: 'scale(0.9)'}}><PersonCard person={child} onClick={() => onPersonClick(child)} /></div>
-            </div>
-          ))}
+          {children.map(child => {
+            const childSpouses = people.filter(p => child.spouseId && p.id === child.spouseId);
+            return (
+              <div key={child.id} style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                  <div style={{ position: 'absolute', top: '-2.5rem', left: '50%', width: '2px', height: '2.5rem', background: '#cbd5e0' }} />
+                  <div style={{transform: 'scale(0.95)'}}>
+                    <PersonCard person={child} onClick={() => onPersonClick(child)} />
+                  </div>
+                </div>
+                
+                {childSpouses.map(sp => (
+                  <React.Fragment key={sp.id}>
+                    <div style={{ width: '15px', height: '2px', background: '#cbd5e0', marginRight: '-0.5rem', marginLeft: '-0.5rem' }} />
+                    <div style={{transform: 'scale(0.85)', opacity: 0.9}}>
+                      <PersonCard person={sp} onClick={() => onPersonClick(sp)} />
+                    </div>
+                  </React.Fragment>
+                ))}
+              </div>
+            );
+          })}
         </div>
       )}
     </div>

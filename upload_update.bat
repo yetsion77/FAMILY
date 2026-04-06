@@ -1,7 +1,7 @@
 @echo off
-echo שומר את עדכון מנוע קשרי המשפחה...
+echo מעלה עדכון עבור הורדת תמונות, הגדרות מין חכמות ותצוגת כלות/חתנים...
 git add .
-git commit -m "Implement advanced focus tree layout and quick add features"
+git commit -m "UX improvements: removed avatars, improved spouses tracking in tree display, and removed explicit gender requests for deterministic relations."
 git push
-echo העדכון המסיבי תוכנת ועלה לרשת! 
+echo סיימנו! שודרג בהצלחה.
 pause
