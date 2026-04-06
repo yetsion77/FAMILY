@@ -1,7 +1,7 @@
 @echo off
-echo מעלה עדכון עבור הורדת תמונות, הגדרות מין חכמות ותצוגת כלות/חתנים...
+echo מוסיף אפשרות מחיקה לעץ...
 git add .
-git commit -m "UX improvements: removed avatars, improved spouses tracking in tree display, and removed explicit gender requests for deterministic relations."
+git commit -m "Added ability to delete people entirely from the family tree and clear relationship records"
 git push
-echo סיימנו! שודרג בהצלחה.
+echo העדכון עלה בהצלחה!
 pause

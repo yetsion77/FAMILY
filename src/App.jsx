@@ -3,7 +3,7 @@ import { UserPlus } from 'lucide-react';
 import Topbar from './components/Topbar';
 import TreeLayout from './components/TreeLayout';
 import DetailsModal from './components/DetailsModal';
-import { getFamilyMembers, addFamilyMember, updateFamilyMember } from './firebase/api';
+import { getFamilyMembers, addFamilyMember, updateFamilyMember, deleteFamilyMember } from './firebase/api';
 import './index.css';
 
 function App() {
@@ -53,6 +53,47 @@ function App() {
     setFocusId(savedPerson.id);
   };
 
+  const handleDeletePerson = async (id) => {
+    const isConfirmed = window.confirm("האם אתה בטוח שברצונך למחוק דמות זו ולנתק אותה מהעץ לצמיתות?");
+    if (!isConfirmed) return;
+    
+    const personToDelete = people.find(p => p.id === id);
+    if (!personToDelete) return;
+
+    // 1. Unlink Spouse
+    if (personToDelete.spouseId) {
+      const spouse = people.find(p => p.id === personToDelete.spouseId);
+      if (spouse) {
+        let updatedSpouse = { ...spouse };
+        updatedSpouse.spouseId = null; // Unlink
+        await updateFamilyMember(spouse.id, updatedSpouse);
+      }
+    }
+
+    // 2. Unlink Children
+    const children = people.filter(p => p.fatherId === id || p.motherId === id);
+    for (const child of children) {
+      let updatedChild = { ...child };
+      if (updatedChild.fatherId === id) updatedChild.fatherId = null;
+      if (updatedChild.motherId === id) updatedChild.motherId = null;
+      await updateFamilyMember(child.id, updatedChild);
+    }
+
+    // Delete logically
+    await deleteFamilyMember(id);
+    
+    setSelectedPerson(null);
+    
+    // Switch focus if we deleted the focused person
+    if (focusId === id) {
+       // Just pick the first available
+       const remaining = people.filter(p => p.id !== id);
+       setFocusId(remaining.length > 0 ? remaining[0].id : null);
+    }
+    
+    await loadData();
+  };
+
   const handleAddOriginPerson = () => {
     setSelectedPerson({
       name: '', gender: 'male', birthYear: '', deathYear: '', details: '', photoUrl: '',
@@ -60,7 +101,6 @@ function App() {
     });
   };
 
-  // מנגנון הוספת קרובים משודרג עם Smart Adoption
   const handleAddSpecificRelative = async (sourceId, relationType, newPersonData) => {
     const sourcePerson = people.find(p => p.id === sourceId);
     if (!sourcePerson) return;
@@ -77,15 +117,12 @@ function App() {
       await updateFamilyMember(updatedSource.id, updatedSource);
     }
     else if (relationType === 'spouse') {
-      // 1. קשר את בן הזוג המקורי לחדש
       updatedSource.spouseId = newDoc.id;
       await updateFamilyMember(updatedSource.id, updatedSource);
       
-      // 2. קשר את בן הזוג החדש בחזרה למקורי
       let updatedNewDoc = { ...newDoc, spouseId: updatedSource.id };
       await updateFamilyMember(updatedNewDoc.id, updatedNewDoc);
       
-      // 3. אימוץ שיוך אוטומטי - ילדים של המקור מקבלים את בן הזוג החדש
       const childrenToUpdate = people.filter(p => p.fatherId === sourceId || p.motherId === sourceId);
       for (const child of childrenToUpdate) {
         let childUpdated = { ...child };
@@ -162,6 +199,7 @@ function App() {
           person={selectedPerson} 
           onClose={handleCloseModal} 
           onSave={handleSavePerson}
+          onDelete={handleDeletePerson}
           onQuickAdd={handleAddSpecificRelative}
           onFocusTarget={handleFocusTarget}
           isEditMode={isEditMode}

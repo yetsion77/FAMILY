@@ -2,12 +2,11 @@ import React, { useState } from 'react';
 import { X, Save, Eye } from 'lucide-react';
 import { uploadPhoto } from '../firebase/api';
 
-const DetailsModal = ({ person, onClose, onSave, onQuickAdd, onFocusTarget, isEditMode }) => {
+const DetailsModal = ({ person, onClose, onSave, onDelete, onQuickAdd, onFocusTarget, isEditMode }) => {
   const [formData, setFormData] = useState({ ...person });
   const [imageFile, setImageFile] = useState(null);
   const [saving, setSaving] = useState(false);
   
-  // States for Quick Add Sub-form
   const [addingType, setAddingType] = useState(null);
   const [newRelData, setNewRelData] = useState({ name: '', gender: 'male' });
 
@@ -36,6 +35,7 @@ const DetailsModal = ({ person, onClose, onSave, onQuickAdd, onFocusTarget, isEd
     }
     
     onSave(updatedData);
+    setSaving(false);
   };
 
   const initiateQuickAdd = (type, defaultGender) => {
@@ -65,7 +65,7 @@ const DetailsModal = ({ person, onClose, onSave, onQuickAdd, onFocusTarget, isEd
               </div>
               
               <div className="form-group">
-                <label className="form-label">מגדר (ישפיע צבע המסגרת)</label>
+                <label className="form-label">מגדר (ישפיע על צבע המסגרת)</label>
                 <select name="gender" className="form-select" value={formData.gender || 'male'} onChange={handleChange}>
                   <option value="male">זכר</option>
                   <option value="female">נקבה</option>
@@ -88,20 +88,22 @@ const DetailsModal = ({ person, onClose, onSave, onQuickAdd, onFocusTarget, isEd
                 <textarea name="details" className="form-textarea" rows="4" value={formData.details || ''} onChange={handleChange}></textarea>
               </div>
 
-              <div className="form-group">
-                <label className="form-label">העלאת תמונה</label>
-                <input type="file" accept="image/*" onChange={handlePhotoSelect} />
-                {imageFile && <p style={{marginTop: '0.5rem', fontSize: '0.9rem', color: 'green'}}>תמונה נבחרה בהצלחה</p>}
+              <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', marginTop: '1.5rem' }}>
+                <button type="submit" className="primary-btn" disabled={saving}>
+                  <Save size={18} /> {saving ? 'שומר...' : 'שמור שינויים'}
+                </button>
+                
+                {person.id && !addingType && (
+                  <button type="button" className="mode-toggle" style={{ background: '#e74c3c', marginLeft: 'auto' }} onClick={() => onDelete(person.id)}>
+                    🗑️ מחק דמות ונתק מהעץ
+                  </button>
+                )}
               </div>
-
-              <button type="submit" className="primary-btn" disabled={saving}>
-                <Save size={18} /> {saving ? 'שומר...' : 'שמור איש זה'}
-              </button>
             </form>
 
             {person.id && !addingType && (
                <div style={{ marginTop: '2.5rem', borderTop: '1px solid #cbd5e0', paddingTop: '1.5rem' }}>
-                 <h3 style={{ marginBottom: '1rem', color: 'var(--primary-color)' }}>בניית העץ והוספת קרובים</h3>
+                 <h3 style={{ marginBottom: '1rem', color: 'var(--primary-color)' }}>בניית העץ והוספת קרובים ממש כעת</h3>
                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.8rem' }}>
                    <button type="button" className="mode-toggle" style={{background: '#718096'}} onClick={() => initiateQuickAdd('father', 'male')}>+ אבא</button>
                    <button type="button" className="mode-toggle" style={{background: '#718096'}} onClick={() => initiateQuickAdd('mother', 'female')}>+ אמא</button>
@@ -118,14 +120,14 @@ const DetailsModal = ({ person, onClose, onSave, onQuickAdd, onFocusTarget, isEd
                    יצירת {addingType === 'father' ? 'אבא' : addingType === 'mother' ? 'אמא' : addingType === 'spouse' ? 'בן/בת זוג' : addingType === 'child' ? 'ילד/ה' : 'אח/ות'}
                  </h3>
                  <div className="form-group">
-                   <label className="form-label">שם</label>
-                   <input type="text" className="form-input" value={newRelData.name} onChange={e => setNewRelData({...newRelData, name: e.target.value})} autoFocus placeholder="לדוגמה: משה כהן" />
+                   <label className="form-label">שם מלא</label>
+                   <input type="text" className="form-input" value={newRelData.name} onChange={e => setNewRelData({...newRelData, name: e.target.value})} autoFocus placeholder="לדוגמה: יצחק ישראלי" />
                  </div>
                  
                  {/* Only show gender for sibling and child */}
                  {['child', 'sibling'].includes(addingType) && (
                    <div className="form-group">
-                     <label className="form-label">מגדר</label>
+                     <label className="form-label">מגדר (ישפיע לקוד הצבע)</label>
                      <select className="form-select" value={newRelData.gender} onChange={e => setNewRelData({...newRelData, gender: e.target.value})}>
                        <option value="male">זכר</option>
                        <option value="female">נקבה</option>
@@ -134,7 +136,7 @@ const DetailsModal = ({ person, onClose, onSave, onQuickAdd, onFocusTarget, isEd
                  )}
                  
                  <div style={{ display: 'flex', gap: '1rem' }}>
-                   <button type="button" className="primary-btn" onClick={submitQuickAdd}>שמור וחבר לאילן</button>
+                   <button type="button" className="primary-btn" onClick={submitQuickAdd}>שמור וחבר ישירות לאילן</button>
                    <button type="button" className="mode-toggle" style={{ background: '#a0aec0' }} onClick={() => setAddingType(null)}>ביטול</button>
                  </div>
                </div>
@@ -144,11 +146,11 @@ const DetailsModal = ({ person, onClose, onSave, onQuickAdd, onFocusTarget, isEd
           <div>
             <div style={{textAlign: 'center', marginBottom: '2rem'}}>
                <img 
-                src={person.photoUrl || (person.gender === 'female' ? "https://api.dicebear.com/7.x/adventurer/svg?seed=" + person.name : "https://api.dicebear.com/7.x/avataaars/svg?seed=" + person.name)} 
+                src={person.photoUrl || (person.gender === 'female' ? "https://api.dicebear.com/7.x/adventurer/svg?seed=" + person.name + "&backgroundColor=transparent" : "https://api.dicebear.com/7.x/avataaars/svg?seed=" + person.name + "&backgroundColor=transparent")} 
                 alt={person.name} 
                 style={{
                   width: '150px', height: '150px', borderRadius: '50%', objectFit: 'cover', 
-                  border: person.gender === 'female' ? '6px solid pink' : person.gender === 'male' ? '6px solid lightblue' : '6px solid #e67e22'
+                  border: person.gender === 'female' ? '6px solid #ff7675' : person.gender === 'male' ? '6px solid #74b9ff' : '6px solid #e67e22'
                 }}
               />
               <h2 style={{fontSize: '2rem', marginTop: '1rem'}}>{person.name}</h2>
@@ -159,14 +161,16 @@ const DetailsModal = ({ person, onClose, onSave, onQuickAdd, onFocusTarget, isEd
                 className="primary-btn" 
                 style={{margin: '0 auto', display: 'flex', alignItems: 'center'}}
               >
-                <Eye size={18} /> התמקד בעץ שלו
+                <Eye size={18} /> התמקד בעץ שלו בצורה מורחבת
               </button>
             </div>
             
-            <div style={{background: '#f8fafc', padding: '1.5rem', borderRadius: '12px', lineHeight: '1.8'}}>
-              <h3 style={{fontSize: '1.2rem', marginBottom: '1rem'}}>קריאה נוספת</h3>
-              <p style={{whiteSpace: 'pre-wrap'}}>{person.details || "לא הוזנו פרטים עליו."}</p>
-            </div>
+            {person.details && (
+              <div style={{background: '#f8fafc', padding: '1.5rem', borderRadius: '12px', lineHeight: '1.8'}}>
+                <h3 style={{fontSize: '1.2rem', marginBottom: '1rem'}}>קורות חיי הדמות</h3>
+                <p style={{whiteSpace: 'pre-wrap'}}>{person.details}</p>
+              </div>
+            )}
           </div>
         )}
       </div>
