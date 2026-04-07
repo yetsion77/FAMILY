@@ -102,14 +102,12 @@ p { line-height: 1.6; }
   position: relative;
   overflow: auto;
   padding: 2rem;
-  display: flex;
-  justify-content: center;
-  /* Remove alignItems center to allow vertical panning easily if tree is tall */
+  /* Removed flex centering to prevent overflow clipping in RTL */
   min-height: 600px;
 }
 
 .person-node {
-  width: 150px;
+  width: 120px;
   text-align: center;
   cursor: pointer;
   position: relative;
@@ -135,7 +133,7 @@ p { line-height: 1.6; }
   box-shadow: var(--shadow-lg);
 }
 
-.person-name { font-weight: 700; font-size: 1.1rem; color: var(--primary-color); }
+.person-name { font-weight: 700; font-size: 1rem; color: var(--primary-color); }
 .person-dates { font-size: 0.8rem; color: var(--text-muted); }
 
 .modal-overlay {

@@ -71,7 +71,7 @@ const TreeLayout = ({ people, onPersonClick, focusId }) => {
   );
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: '1rem' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: '1rem', margin: '0 auto', minWidth: 'max-content' }}>
       
       {/* 1. Ancestors row */}
       <div style={{ marginBottom: '0' }}>
@@ -79,11 +79,11 @@ const TreeLayout = ({ people, onPersonClick, focusId }) => {
       </div>
 
       {/* 2. Focus Center line */}
-      <div style={{ display: 'flex', gap: '3rem', alignItems: 'center', position: 'relative', marginTop: '2.5rem' }}>
+      <div style={{ display: 'flex', gap: '2rem', alignItems: 'center', position: 'relative', marginTop: '2.5rem' }}>
         
         {/* Siblings */}
         {siblings.length > 0 && (
-          <div style={{ display: 'flex', gap: '2rem', borderRight: '2px dashed #cbd5e0', paddingRight: '2rem' }}>
+          <div style={{ display: 'flex', gap: '1rem', borderRight: '2px dashed #cbd5e0', paddingRight: '2rem' }}>
             {siblings.map(sibling => (
                <div key={sibling.id} style={{transform: 'scale(0.85)', opacity: 0.8}}>
                  <PersonCard person={sibling} onClick={() => onPersonClick(sibling)} hasChildrenIndicator={checkHasSubtree(sibling.id, people)} />
@@ -94,8 +94,8 @@ const TreeLayout = ({ people, onPersonClick, focusId }) => {
 
         {/* Central Family Unit */}
         <div style={{ 
-          display: 'flex', gap: '1.5rem', background: 'var(--card-bg)', 
-          padding: '1.5rem', borderRadius: '1.5rem', border: '2px solid rgba(44, 62, 80, 0.1)',
+          display: 'flex', gap: '1rem', background: 'var(--card-bg)', 
+          padding: '1.2rem', borderRadius: '1.5rem', border: '2px solid rgba(44, 62, 80, 0.1)',
           boxShadow: '0 10px 30px rgba(0, 0, 0, 0.05)' 
         }}>
           {/* Focus person has CHILDREN physically shown below, so don't show the indicator mark, as the tree displays them! */}
@@ -103,7 +103,7 @@ const TreeLayout = ({ people, onPersonClick, focusId }) => {
           
           {spouses.map(spouse => (
             <React.Fragment key={spouse.id}>
-              <div style={{ width: '30px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <div style={{ width: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <div style={{ width: '100%', height: '3px', background: 'var(--primary-color)', opacity: 0.5 }} />
               </div>
               <PersonCard person={spouse} onClick={() => onPersonClick(spouse)} hasChildrenIndicator={false} />
