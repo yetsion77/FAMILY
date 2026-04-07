@@ -33,11 +33,11 @@ const PersonCard = ({ person, onClick, isFocus, hasChildrenIndicator }) => {
          <div style={{ 
             position: 'absolute', bottom: '-10px', 
             background: 'var(--card-bg)', border: '2px solid #cbd5e0', 
-            borderRadius: '50%', width: '22px', height: '22px', 
+            borderRadius: '50%', width: '24px', height: '24px', 
             display: 'flex', justifyContent: 'center', alignItems: 'center',
             color: 'var(--primary-color)', fontSize: '1.2rem', lineHeight: 1, zIndex: 10
-         }} title="לדמות זו יש ענף המשך">
-            ▾
+         }} title="לחץ כדי להתמקד בענף ובקשרים של דמות זו">
+            +
          </div>
       )}
     </div>

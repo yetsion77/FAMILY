@@ -2,6 +2,9 @@ import React from 'react';
 import PersonCard from './PersonCard';
 
 const checkHasSubtree = (personId, people) => {
+  const person = people.find(p => p.id === personId);
+  if (!person) return false;
+  if (person.fatherId || person.motherId || person.spouseId) return true;
   return people.some(p => p.fatherId === personId || p.motherId === personId);
 };
 
@@ -136,8 +139,7 @@ const TreeLayout = ({ people, onPersonClick, focusId }) => {
                   {!isOnly && (
                      <div style={{ 
                         position: 'absolute', top: 0, height: '2px', background: '#cbd5e0',
-                        left: isFirst ? '0' : '0', 
-                        right: isLast ? '0' : '0',
+                        left: isLast ? '50%' : '0',
                         width: isFirst || isLast ? '50%' : '100%',
                         zIndex: 0
                      }} />
