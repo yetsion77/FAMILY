@@ -1,7 +1,7 @@
 @echo off
-echo מקטין גדלים ומשפר גלילה רוחבית בעץ כך ששום ענף לא ייחתך...
+echo מחבר את הקווים בין כל הדורות כדי לקבל אילן עוטף מושלם...
 git add .
-git commit -m "Optimize UI scale for massive trees and fix flexbox centering clipping bounds"
+git commit -m "UI Perfect Flow: ancestors droplines seamlessly branch to all siblings simultaneously, fixing disconnected relative paths."
 git push
-echo סיימנו! שודרג בהצלחה.
+echo נגמר. רענן והשתהה!
 pause

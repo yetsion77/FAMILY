@@ -27,8 +27,7 @@ const AncestorsTree = ({ personId, people, onPersonClick, level = 0 }) => {
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
             <AncestorsTree personId={father.id} people={people} onPersonClick={onPersonClick} level={level + 1} />
             <div style={{ transform: `scale(${scale})`, opacity, transformOrigin: 'bottom center', zIndex: 10 }}>
-              {/* Ancestors generally imply children (their focus path), so we manually mask hasChildrenIndicator for parents directly above to avoid clutter. However, true is also fine. */}
-              <PersonCard person={father} onClick={() => onPersonClick(father)} hasChildrenIndicator={false} />
+              <PersonCard person={father} onClick={() => onPersonClick(father)} hasChildrenIndicator={checkHasSubtree(father.id, people)} />
             </div>
           </div>
         )}
@@ -37,7 +36,7 @@ const AncestorsTree = ({ personId, people, onPersonClick, level = 0 }) => {
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
             <AncestorsTree personId={mother.id} people={people} onPersonClick={onPersonClick} level={level + 1} />
             <div style={{ transform: `scale(${scale})`, opacity, transformOrigin: 'bottom center', zIndex: 10 }}>
-              <PersonCard person={mother} onClick={() => onPersonClick(mother)} hasChildrenIndicator={false} />
+              <PersonCard person={mother} onClick={() => onPersonClick(mother)} hasChildrenIndicator={checkHasSubtree(mother.id, people)} />
             </div>
           </div>
         )}
@@ -70,6 +69,13 @@ const TreeLayout = ({ people, onPersonClick, focusId }) => {
     targetParentIds.includes(p.fatherId) || targetParentIds.includes(p.motherId) || targetParentIds.includes(p.parentId)
   );
 
+  const focusRowItems = [
+     ...siblings.map(sib => ({ type: 'sibling', node: sib })),
+     { type: 'focus', node: focusPerson }
+  ];
+
+  const hasParentsFlag = focusPerson.fatherId || focusPerson.motherId;
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: '1rem', margin: '0 auto', minWidth: 'max-content' }}>
       
@@ -78,37 +84,58 @@ const TreeLayout = ({ people, onPersonClick, focusId }) => {
          <AncestorsTree personId={focusPerson.id} people={people} onPersonClick={onPersonClick} />
       </div>
 
-      {/* 2. Focus Center line */}
-      <div style={{ display: 'flex', gap: '2rem', alignItems: 'center', position: 'relative', marginTop: '2.5rem' }}>
-        
-        {/* Siblings */}
-        {siblings.length > 0 && (
-          <div style={{ display: 'flex', gap: '1rem', borderRight: '2px dashed #cbd5e0', paddingRight: '2rem' }}>
-            {siblings.map(sibling => (
-               <div key={sibling.id} style={{transform: 'scale(0.85)', opacity: 0.8}}>
-                 <PersonCard person={sibling} onClick={() => onPersonClick(sibling)} hasChildrenIndicator={checkHasSubtree(sibling.id, people)} />
-               </div>
-            ))}
-          </div>
-        )}
+      {/* 2. Focus Row (Siblings + Focus Person) with precise crossbar aligned with Ancestors stem */}
+      <div style={{ position: 'relative', marginTop: '0', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+        <div style={{ display: 'flex', justifyContent: 'center' }}>
+          {focusRowItems.map((item, index) => {
+            const isFirst = index === 0;
+            const isLast = index === focusRowItems.length - 1;
+            const isOnly = focusRowItems.length === 1;
 
-        {/* Central Family Unit */}
-        <div style={{ 
-          display: 'flex', gap: '1rem', background: 'var(--card-bg)', 
-          padding: '1.2rem', borderRadius: '1.5rem', border: '2px solid rgba(44, 62, 80, 0.1)',
-          boxShadow: '0 10px 30px rgba(0, 0, 0, 0.05)' 
-        }}>
-          {/* Focus person has CHILDREN physically shown below, so don't show the indicator mark, as the tree displays them! */}
-          <PersonCard person={focusPerson} onClick={() => onPersonClick(focusPerson)} isFocus={true} hasChildrenIndicator={false} />
-          
-          {spouses.map(spouse => (
-            <React.Fragment key={spouse.id}>
-              <div style={{ width: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <div style={{ width: '100%', height: '3px', background: 'var(--primary-color)', opacity: 0.5 }} />
+            return (
+              <div key={item.node.id} style={{ display: 'flex', position: 'relative', padding: hasParentsFlag ? '2rem 1.5rem 0' : '0 1.5rem', minWidth: '160px', justifyContent: 'center' }}>
+                
+                {hasParentsFlag && (
+                  <div style={{ position: 'absolute', top: '0', left: '50%', width: '2px', height: '2rem', background: '#cbd5e0' }} />
+                )}
+                
+                {hasParentsFlag && !isOnly && (
+                   <div style={{ 
+                      position: 'absolute', top: 0, height: '2px', background: '#cbd5e0',
+                      left: isLast ? '50%' : '0', 
+                      width: isFirst || isLast ? '50%' : '100%',
+                      zIndex: 0
+                   }} />
+                )}
+
+                {item.type === 'sibling' ? (
+                  <div style={{ display: 'flex', alignItems: 'flex-start', zIndex: 2 }}>
+                    <div style={{transform: 'scale(0.85)', opacity: 0.8}}>
+                       <PersonCard person={item.node} onClick={() => onPersonClick(item.node)} hasChildrenIndicator={checkHasSubtree(item.node.id, people)} />
+                    </div>
+                  </div>
+                ) : (
+                  <div style={{ 
+                    display: 'flex', gap: '1rem', background: 'var(--card-bg)', 
+                    padding: '1.2rem', borderRadius: '1.5rem', border: '2px solid rgba(44, 62, 80, 0.1)',
+                    boxShadow: '0 10px 30px rgba(0, 0, 0, 0.05)', zIndex: 2
+                  }}>
+                    <PersonCard person={item.node} onClick={() => onPersonClick(item.node)} isFocus={true} hasChildrenIndicator={checkHasSubtree(item.node.id, people)} />
+                    
+                    {spouses.map(spouse => (
+                      <React.Fragment key={spouse.id}>
+                        <div style={{ width: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <div style={{ width: '100%', height: '3px', background: 'var(--primary-color)', opacity: 0.5 }} />
+                        </div>
+                        <PersonCard person={spouse} onClick={() => onPersonClick(spouse)} hasChildrenIndicator={checkHasSubtree(spouse.id, people)} />
+                      </React.Fragment>
+                    ))}
+                  </div>
+                )}
+
               </div>
-              <PersonCard person={spouse} onClick={() => onPersonClick(spouse)} hasChildrenIndicator={false} />
-            </React.Fragment>
-          ))}
+            )
+          })}
         </div>
       </div>
 
@@ -116,7 +143,6 @@ const TreeLayout = ({ people, onPersonClick, focusId }) => {
       {children.length > 0 && (
         <div style={{ position: 'relative', marginTop: '3rem', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
           
-          {/* Stem dropping down from parents */}
           <div style={{ width: '2px', height: '3rem', background: '#cbd5e0' }} />
           
           <div style={{ display: 'flex', justifyContent: 'center' }}>
@@ -127,25 +153,20 @@ const TreeLayout = ({ people, onPersonClick, focusId }) => {
 
               const childSpouses = people.filter(p => child.spouseId && p.id === child.spouseId);
 
-              // In RTL, the first element spans from the right horizontally over the others. 
-              // We use left/right absolute coordinates strictly within its padded container.
               return (
                 <div key={child.id} style={{ display: 'flex', position: 'relative', padding: '2rem 1.5rem 0', minWidth: '160px', justifyContent: 'center' }}>
                   
-                  {/* Drop-down line perfectly connected to the center of THIS specific padded wrapper block */}
                   <div style={{ position: 'absolute', top: '0', left: '50%', width: '2px', height: '2rem', background: '#cbd5e0' }} />
                   
-                  {/* The horizontal crossbar distributing the stem to all children */}
                   {!isOnly && (
                      <div style={{ 
                         position: 'absolute', top: 0, height: '2px', background: '#cbd5e0',
-                        left: isLast ? '50%' : '0',
+                        left: isLast ? '50%' : '0', 
                         width: isFirst || isLast ? '50%' : '100%',
                         zIndex: 0
                      }} />
                   )}
 
-                  {/* The Child Family Unit Group cluster */}
                   <div style={{ display: 'flex', alignItems: 'center', zIndex: 2 }}>
                     <div style={{transform: 'scale(0.95)'}}>
                        <PersonCard person={child} onClick={() => onPersonClick(child)} hasChildrenIndicator={checkHasSubtree(child.id, people)} />
@@ -153,7 +174,6 @@ const TreeLayout = ({ people, onPersonClick, focusId }) => {
                     
                     {childSpouses.map(sp => (
                       <React.Fragment key={sp.id}>
-                        {/* the horizontal line linking child directly to child's spouse */}
                         <div style={{ width: '15px', height: '2px', background: '#cbd5e0', marginRight: '-0.5rem', marginLeft: '-0.5rem', zIndex: 1 }} />
                         <div style={{transform: 'scale(0.85)', opacity: 0.9}}>
                            <PersonCard person={sp} onClick={() => onPersonClick(sp)} hasChildrenIndicator={checkHasSubtree(sp.id, people)} />
