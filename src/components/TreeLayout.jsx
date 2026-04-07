@@ -1,6 +1,10 @@
 import React from 'react';
 import PersonCard from './PersonCard';
 
+const checkHasSubtree = (personId, people) => {
+  return people.some(p => p.fatherId === personId || p.motherId === personId);
+};
+
 const AncestorsTree = ({ personId, people, onPersonClick, level = 0 }) => {
   const person = people.find(p => p.id === personId);
   if (!person) return null;
@@ -10,7 +14,6 @@ const AncestorsTree = ({ personId, people, onPersonClick, level = 0 }) => {
   
   if (!father && !mother) return null;
 
-  // הקטנת הפרופורציה בכל דור עליון ב-12%
   const scale = Math.max(0.65, 1 - level * 0.12);
   const opacity = Math.max(0.6, 1 - level * 0.15);
 
@@ -21,7 +24,8 @@ const AncestorsTree = ({ personId, people, onPersonClick, level = 0 }) => {
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
             <AncestorsTree personId={father.id} people={people} onPersonClick={onPersonClick} level={level + 1} />
             <div style={{ transform: `scale(${scale})`, opacity, transformOrigin: 'bottom center', zIndex: 10 }}>
-              <PersonCard person={father} onClick={() => onPersonClick(father)} />
+              {/* Ancestors generally imply children (their focus path), so we manually mask hasChildrenIndicator for parents directly above to avoid clutter. However, true is also fine. */}
+              <PersonCard person={father} onClick={() => onPersonClick(father)} hasChildrenIndicator={false} />
             </div>
           </div>
         )}
@@ -30,18 +34,16 @@ const AncestorsTree = ({ personId, people, onPersonClick, level = 0 }) => {
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
             <AncestorsTree personId={mother.id} people={people} onPersonClick={onPersonClick} level={level + 1} />
             <div style={{ transform: `scale(${scale})`, opacity, transformOrigin: 'bottom center', zIndex: 10 }}>
-              <PersonCard person={mother} onClick={() => onPersonClick(mother)} />
+              <PersonCard person={mother} onClick={() => onPersonClick(mother)} hasChildrenIndicator={false} />
             </div>
           </div>
         )}
 
-        {/* קו מחבר בין ההורים */}
         {father && mother && (
           <div className="tree-line-horizontal" style={{ bottom: `${3 * scale}rem`, left: '25%', width: '50%', height: '2px', zIndex: 1 }} />
         )}
       </div>
 
-      {/* קו היורד מההורים (או הורה בודד) למטה אל הילד */}
       <div className="tree-line-vertical" style={{ position: 'absolute', bottom: 0, height: `${3 * scale}rem`, left: '50%', zIndex: 1 }} />
     </div>
   );
@@ -68,74 +70,101 @@ const TreeLayout = ({ people, onPersonClick, focusId }) => {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: '1rem' }}>
       
-      {/* 1. עץ השורשים הרקורסיבי מלמעלה */}
+      {/* 1. Ancestors row */}
       <div style={{ marginBottom: '0' }}>
          <AncestorsTree personId={focusPerson.id} people={people} onPersonClick={onPersonClick} />
       </div>
 
-      {/* 2. שורת המרכז: אחים + דמות מרכזית + בני זוג */}
+      {/* 2. Focus Center line */}
       <div style={{ display: 'flex', gap: '3rem', alignItems: 'center', position: 'relative', marginTop: '2.5rem' }}>
         
-        {/* אחים בצד ימין (RTL) */}
+        {/* Siblings */}
         {siblings.length > 0 && (
           <div style={{ display: 'flex', gap: '2rem', borderRight: '2px dashed #cbd5e0', paddingRight: '2rem' }}>
             {siblings.map(sibling => (
-               <div key={sibling.id} style={{transform: 'scale(0.85)', opacity: 0.8}}><PersonCard person={sibling} onClick={() => onPersonClick(sibling)} /></div>
+               <div key={sibling.id} style={{transform: 'scale(0.85)', opacity: 0.8}}>
+                 <PersonCard person={sibling} onClick={() => onPersonClick(sibling)} hasChildrenIndicator={checkHasSubtree(sibling.id, people)} />
+               </div>
             ))}
           </div>
         )}
 
-        {/* תא משפחתי מלא (מוקד + נישואים) */}
+        {/* Central Family Unit */}
         <div style={{ 
           display: 'flex', gap: '1.5rem', background: 'var(--card-bg)', 
           padding: '1.5rem', borderRadius: '1.5rem', border: '2px solid rgba(44, 62, 80, 0.1)',
           boxShadow: '0 10px 30px rgba(0, 0, 0, 0.05)' 
         }}>
-          <PersonCard person={focusPerson} onClick={() => onPersonClick(focusPerson)} isFocus={true} />
+          {/* Focus person has CHILDREN physically shown below, so don't show the indicator mark, as the tree displays them! */}
+          <PersonCard person={focusPerson} onClick={() => onPersonClick(focusPerson)} isFocus={true} hasChildrenIndicator={false} />
           
           {spouses.map(spouse => (
             <React.Fragment key={spouse.id}>
               <div style={{ width: '30px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <div style={{ width: '100%', height: '3px', background: 'var(--primary-color)', opacity: 0.5 }} />
               </div>
-              <PersonCard person={spouse} onClick={() => onPersonClick(spouse)} />
+              <PersonCard person={spouse} onClick={() => onPersonClick(spouse)} hasChildrenIndicator={false} />
             </React.Fragment>
           ))}
         </div>
       </div>
 
-      {/* 3. שורת ילדים יורדת מהתא המשפחתי */}
+      {/* 3. Descendants row perfectly aligned flex lines */}
       {children.length > 0 && (
-        <div style={{ display: 'flex', gap: '3rem', position: 'relative', marginTop: '4rem' }}>
-          {/* קו עליון שיורד מהתא המשפחתי */}
-          <div style={{ position: 'absolute', top: '-4rem', left: '50%', width: '2px', height: '4rem', background: '#cbd5e0' }} />
+        <div style={{ position: 'relative', marginTop: '3rem', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
           
-          {children.length > 1 && (
-            <div className="tree-line-horizontal" style={{ top: '-1.5rem', left: `calc(50% / ${children.length})`, width: `calc(100% - 100% / ${children.length})`, height: '2px', background: '#cbd5e0' }} />
-          )}
+          {/* Stem dropping down from parents */}
+          <div style={{ width: '2px', height: '3rem', background: '#cbd5e0' }} />
+          
+          <div style={{ display: 'flex', justifyContent: 'center' }}>
+            {children.map((child, index) => {
+              const isFirst = index === 0;
+              const isLast = index === children.length - 1;
+              const isOnly = children.length === 1;
 
-          {children.map(child => {
-            const childSpouses = people.filter(p => child.spouseId && p.id === child.spouseId);
-            return (
-              <div key={child.id} style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-                <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                  <div style={{ position: 'absolute', top: '-2.5rem', left: '50%', width: '2px', height: '2.5rem', background: '#cbd5e0' }} />
-                  <div style={{transform: 'scale(0.95)'}}>
-                    <PersonCard person={child} onClick={() => onPersonClick(child)} />
-                  </div>
-                </div>
-                
-                {childSpouses.map(sp => (
-                  <React.Fragment key={sp.id}>
-                    <div style={{ width: '15px', height: '2px', background: '#cbd5e0', marginRight: '-0.5rem', marginLeft: '-0.5rem' }} />
-                    <div style={{transform: 'scale(0.85)', opacity: 0.9}}>
-                      <PersonCard person={sp} onClick={() => onPersonClick(sp)} />
+              const childSpouses = people.filter(p => child.spouseId && p.id === child.spouseId);
+
+              // In RTL, the first element spans from the right horizontally over the others. 
+              // We use left/right absolute coordinates strictly within its padded container.
+              return (
+                <div key={child.id} style={{ display: 'flex', position: 'relative', padding: '2rem 1.5rem 0', minWidth: '160px', justifyContent: 'center' }}>
+                  
+                  {/* Drop-down line perfectly connected to the center of THIS specific padded wrapper block */}
+                  <div style={{ position: 'absolute', top: '0', left: '50%', width: '2px', height: '2rem', background: '#cbd5e0' }} />
+                  
+                  {/* The horizontal crossbar distributing the stem to all children */}
+                  {!isOnly && (
+                     <div style={{ 
+                        position: 'absolute', top: 0, height: '2px', background: '#cbd5e0',
+                        left: isFirst ? '0' : '0', 
+                        right: isLast ? '0' : '0',
+                        width: isFirst || isLast ? '50%' : '100%',
+                        zIndex: 0
+                     }} />
+                  )}
+
+                  {/* The Child Family Unit Group cluster */}
+                  <div style={{ display: 'flex', alignItems: 'center', zIndex: 2 }}>
+                    <div style={{transform: 'scale(0.95)'}}>
+                       <PersonCard person={child} onClick={() => onPersonClick(child)} hasChildrenIndicator={checkHasSubtree(child.id, people)} />
                     </div>
-                  </React.Fragment>
-                ))}
-              </div>
-            );
-          })}
+                    
+                    {childSpouses.map(sp => (
+                      <React.Fragment key={sp.id}>
+                        {/* the horizontal line linking child directly to child's spouse */}
+                        <div style={{ width: '15px', height: '2px', background: '#cbd5e0', marginRight: '-0.5rem', marginLeft: '-0.5rem', zIndex: 1 }} />
+                        <div style={{transform: 'scale(0.85)', opacity: 0.9}}>
+                           <PersonCard person={sp} onClick={() => onPersonClick(sp)} hasChildrenIndicator={checkHasSubtree(sp.id, people)} />
+                        </div>
+                      </React.Fragment>
+                    ))}
+                  </div>
+
+                </div>
+              )
+            })}
+          </div>
+
         </div>
       )}
     </div>

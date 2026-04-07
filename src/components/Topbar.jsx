@@ -1,17 +1,18 @@
 import React from 'react';
-import { Edit2, Eye } from 'lucide-react';
+import { Network } from 'lucide-react';
 
-const Topbar = ({ isEditMode, setIsEditMode }) => {
+const Topbar = () => {
   return (
-    <header className="topbar glass-card">
-      <h2>עץ המשפחה שלנו</h2>
-      <button 
-        className="mode-toggle"
-        onClick={() => setIsEditMode(!isEditMode)}
-      >
-        {isEditMode ? <><Eye size={18} /> מצב תצוגה</> : <><Edit2 size={18} /> מצב עריכה</>}
-      </button>
-    </header>
+    <div className="topbar glass-card">
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
+        <Network color="var(--primary-color)" size={28} />
+        <h1 style={{ margin: 0, fontSize: '1.5rem', color: 'var(--primary-color)' }}>עץ משפחה</h1>
+      </div>
+      <div>
+        {/* Global mode toggle removed. Application is now purely dynamic. */}
+        <span style={{color: 'var(--text-muted)', fontSize: '0.9rem'}}>שורש אילן יוחסין</span>
+      </div>
+    </div>
   );
 };
 

@@ -1,6 +1,6 @@
 import React from 'react';
 
-const PersonCard = ({ person, onClick, isFocus }) => {
+const PersonCard = ({ person, onClick, isFocus, hasChildrenIndicator }) => {
   let genderClass = '';
   if (person.gender === 'male') genderClass = 'gender-male';
   if (person.gender === 'female') genderClass = 'gender-female';
@@ -16,7 +16,9 @@ const PersonCard = ({ person, onClick, isFocus }) => {
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'center',
-        minHeight: '80px'
+        alignItems: 'center',
+        minHeight: '80px',
+        position: 'relative'
       }} 
       onClick={onClick}
     >
@@ -25,6 +27,18 @@ const PersonCard = ({ person, onClick, isFocus }) => {
         <div className="person-dates" style={{ marginTop: '0.5rem' }}>
           {person.birthYear} - {person.deathYear || 'היום'}
         </div>
+      )}
+
+      {hasChildrenIndicator && (
+         <div style={{ 
+            position: 'absolute', bottom: '-10px', 
+            background: 'var(--card-bg)', border: '2px solid #cbd5e0', 
+            borderRadius: '50%', width: '22px', height: '22px', 
+            display: 'flex', justifyContent: 'center', alignItems: 'center',
+            color: 'var(--primary-color)', fontSize: '1.2rem', lineHeight: 1, zIndex: 10
+         }} title="לדמות זו יש ענף המשך">
+            ▾
+         </div>
       )}
     </div>
   );

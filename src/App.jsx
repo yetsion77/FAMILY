@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { UserPlus } from 'lucide-react';
+import React from 'react';
+import { UserPlus, Leaf } from 'lucide-react';
 import Topbar from './components/Topbar';
 import TreeLayout from './components/TreeLayout';
 import DetailsModal from './components/DetailsModal';
@@ -7,7 +7,6 @@ import { getFamilyMembers, addFamilyMember, updateFamilyMember, deleteFamilyMemb
 import './index.css';
 
 function App() {
-  const [isEditMode, setIsEditMode] = useState(false);
   const [people, setPeople] = useState([]);
   const [selectedPerson, setSelectedPerson] = useState(null);
   const [focusId, setFocusId] = useState(null);
@@ -39,18 +38,15 @@ function App() {
       savedPerson = await updateFamilyMember(updatedData.id, updatedData);
     } else {
       savedPerson = await addFamilyMember(updatedData);
-      
-      if (savedPerson.spouseId) {
-        const spouseObj = people.find(p => p.id === savedPerson.spouseId);
-        if (spouseObj) {
-          spouseObj.spouseId = savedPerson.id;
-          await updateFamilyMember(spouseObj.id, spouseObj);
-        }
-      }
     }
     await loadData();
-    setSelectedPerson(null);
-    setFocusId(savedPerson.id);
+    // After creating a completely new initial person, just set focus
+    if (!focusId) setFocusId(savedPerson.id);
+    
+    // We intentionally don't close the modal if they are just editing details, 
+    // but the modal will manage its own internal visual state.
+    // For origin person creation, we close it.
+    if (!updatedData.id) setSelectedPerson(null);
   };
 
   const handleDeletePerson = async (id) => {
@@ -60,17 +56,15 @@ function App() {
     const personToDelete = people.find(p => p.id === id);
     if (!personToDelete) return;
 
-    // 1. Unlink Spouse
     if (personToDelete.spouseId) {
       const spouse = people.find(p => p.id === personToDelete.spouseId);
       if (spouse) {
         let updatedSpouse = { ...spouse };
-        updatedSpouse.spouseId = null; // Unlink
+        updatedSpouse.spouseId = null; 
         await updateFamilyMember(spouse.id, updatedSpouse);
       }
     }
 
-    // 2. Unlink Children
     const children = people.filter(p => p.fatherId === id || p.motherId === id);
     for (const child of children) {
       let updatedChild = { ...child };
@@ -79,14 +73,10 @@ function App() {
       await updateFamilyMember(child.id, updatedChild);
     }
 
-    // Delete logically
     await deleteFamilyMember(id);
-    
     setSelectedPerson(null);
     
-    // Switch focus if we deleted the focused person
     if (focusId === id) {
-       // Just pick the first available
        const remaining = people.filter(p => p.id !== id);
        setFocusId(remaining.length > 0 ? remaining[0].id : null);
     }
@@ -95,9 +85,11 @@ function App() {
   };
 
   const handleAddOriginPerson = () => {
+    // Open modal directly in "edit" mode for the very first person in the tree
     setSelectedPerson({
       name: '', gender: 'male', birthYear: '', deathYear: '', details: '', photoUrl: '',
-      fatherId: null, motherId: null, spouseId: null, parentId: null
+      fatherId: null, motherId: null, spouseId: null, parentId: null,
+      _isNewOrigin: true
     });
   };
 
@@ -162,31 +154,35 @@ function App() {
     }
 
     await loadData();
-    setSelectedPerson(null);
+    // Refresh selected person data so modal updates perfectly without closing
+    setSelectedPerson({ ...updatedSource });
   };
 
   return (
     <div className="app-container">
-      <Topbar isEditMode={isEditMode} setIsEditMode={setIsEditMode} />
+      <Topbar />
       
-      {isEditMode && people.length === 0 && (
+      {people.length === 0 && (
         <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1rem' }}>
-          <button className="primary-btn" onClick={handleAddOriginPerson}>
-            <UserPlus size={18} /> התחל את עץ המשפחה החדש
+          <button className="primary-btn" onClick={handleAddOriginPerson} style={{ padding: '1rem 3rem', fontSize: '1.2rem' }}>
+            <UserPlus size={24} /> יצירת שורש לעץ משפחה
           </button>
         </div>
       )}
 
       {loading ? (
         <div style={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-          <h3>טוען את עץ המשפחה...</h3>
+          <div style={{ textAlign: 'center', color: 'var(--text-muted)' }}>
+            <Leaf size={48} className="spin-animation" style={{ marginBottom: '1rem' }} />
+            <h3>טוען את עץ המשפחה...</h3>
+          </div>
         </div>
       ) : (
         <section className="tree-container glass-card" style={{ overflow: 'auto' }}>
           {people.length === 0 ? (
-            <div style={{ textAlign: 'center', color: 'var(--text-muted)' }}>
+            <div style={{ textAlign: 'center', color: 'var(--text-muted)', paddingTop: '3rem' }}>
               <h3>העץ ריק כרגע</h3>
-              {isEditMode && <p>לחץ על "התחל" כדי להוסיף את הדמות הראשונה.</p>}
+              <p>לחץ על הכפתור למעלה כדי להתחיל.</p>
             </div>
           ) : (
             <TreeLayout people={people} onPersonClick={handlePersonClick} focusId={focusId} />
@@ -202,7 +198,6 @@ function App() {
           onDelete={handleDeletePerson}
           onQuickAdd={handleAddSpecificRelative}
           onFocusTarget={handleFocusTarget}
-          isEditMode={isEditMode}
         />
       )}
     </div>

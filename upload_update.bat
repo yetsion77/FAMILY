@@ -1,7 +1,7 @@
 @echo off
-echo מוסיף אפשרות מחיקה לעץ...
+echo שולח את ארכיטקטורת V3 והעץ המשופץ...
 git add .
-git commit -m "Added ability to delete people entirely from the family tree and clear relationship records"
+git commit -m "Complete UI overhaul: unified view modal, elegant descendant tree layouts, missing subtree markers"
 git push
-echo העדכון עלה בהצלחה!
+echo סיימנו להעלות!
 pause
