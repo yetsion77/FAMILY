@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { UserPlus, Leaf } from 'lucide-react';
 import Topbar from './components/Topbar';
 import TreeLayout from './components/TreeLayout';
