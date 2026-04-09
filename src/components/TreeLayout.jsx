@@ -83,9 +83,13 @@ const TreeLayout = ({ people, onPersonClick, focusId }) => {
     targetParentIds.includes(p.fatherId) || targetParentIds.includes(p.motherId) || targetParentIds.includes(p.parentId)
   );
 
+  const siblingsBefore = siblings.slice(0, Math.ceil(siblings.length / 2));
+  const siblingsAfter = siblings.slice(Math.ceil(siblings.length / 2));
+
   const focusRowItems = [
-     ...siblings.map(sib => ({ type: 'sibling', node: sib })),
-     { type: 'focus', node: focusPerson }
+     ...siblingsBefore.map(sib => ({ type: 'sibling', node: sib })),
+     { type: 'focus', node: focusPerson },
+     ...siblingsAfter.map(sib => ({ type: 'sibling', node: sib }))
   ];
 
   const renderedIds = new Set();
@@ -118,7 +122,7 @@ const TreeLayout = ({ people, onPersonClick, focusId }) => {
          <AncestorsTree personId={focusPerson.id} people={people} onPersonClick={onPersonClick} renderedIds={renderedIds} />
       </div>
 
-      {/* 2. Focus Row (Siblings + Focus Person) with precise crossbar aligned with Ancestors stem */}
+      {/* 2. Focus Row (Siblings + Focus Person) and Descendants inside Focus Node */}
       <div style={{ position: 'relative', marginTop: '0', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
         <div style={{ display: 'flex', justifyContent: 'center' }}>
           {focusRowItems.map((item, index) => {
@@ -149,35 +153,101 @@ const TreeLayout = ({ people, onPersonClick, focusId }) => {
                     </div>
                   </div>
                 ) : (
-                  <div style={{ display: 'flex', alignItems: 'center' }}>
-                    {spouses.length > 0 && (
-                       <div style={{ display: 'flex', gap: '1rem', visibility: 'hidden', pointerEvents: 'none' }}>
-                         {spouses.map(sp => (
-                           <React.Fragment key={`spacer-${sp.id}`}>
-                             <div style={{ width: '20px' }}></div>
-                             <PersonCard person={sp} />
-                           </React.Fragment>
-                         ))}
-                         <div style={{ width: 0 }}></div>
-                       </div>
-                    )}
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                    <div style={{ display: 'flex', alignItems: 'center' }}>
+                      {spouses.length > 0 && (
+                         <div style={{ display: 'flex', gap: '1rem', visibility: 'hidden', pointerEvents: 'none' }}>
+                           {spouses.map(sp => (
+                             <React.Fragment key={`spacer-${sp.id}`}>
+                               <div style={{ width: '20px' }}></div>
+                               <PersonCard person={sp} />
+                             </React.Fragment>
+                           ))}
+                           <div style={{ width: 0 }}></div>
+                         </div>
+                      )}
 
-                    <div style={{ 
-                      display: 'flex', gap: '1rem', background: 'var(--card-bg)', 
-                      padding: '1.2rem', borderRadius: '1.5rem', border: '2px solid rgba(44, 62, 80, 0.1)',
-                      boxShadow: '0 10px 30px rgba(0, 0, 0, 0.05)', zIndex: 2
-                    }}>
-                      <PersonCard person={item.node} onClick={() => onPersonClick(item.node)} isFocus={true} hasChildrenIndicator={hasHiddenLinks(item.node.id, people, renderedIds)} />
-                      
-                      {spouses.map(spouse => (
-                        <React.Fragment key={spouse.id}>
-                          <div style={{ width: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            <div style={{ width: '100%', height: '3px', background: 'var(--primary-color)', opacity: 0.5 }} />
-                          </div>
-                          <PersonCard person={spouse} onClick={() => onPersonClick(spouse)} hasChildrenIndicator={hasHiddenLinks(spouse.id, people, renderedIds)} />
-                        </React.Fragment>
-                      ))}
+                      <div style={{ 
+                        display: 'flex', gap: '1rem', background: 'var(--card-bg)', 
+                        padding: '1.2rem', borderRadius: '1.5rem', border: '2px solid rgba(44, 62, 80, 0.1)',
+                        boxShadow: '0 10px 30px rgba(0, 0, 0, 0.05)', zIndex: 2
+                      }}>
+                        <PersonCard person={item.node} onClick={() => onPersonClick(item.node)} isFocus={true} hasChildrenIndicator={hasHiddenLinks(item.node.id, people, renderedIds)} />
+                        
+                        {spouses.map(spouse => (
+                          <React.Fragment key={spouse.id}>
+                            <div style={{ width: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                              <div style={{ width: '100%', height: '3px', background: 'var(--primary-color)', opacity: 0.5 }} />
+                            </div>
+                            <PersonCard person={spouse} onClick={() => onPersonClick(spouse)} hasChildrenIndicator={hasHiddenLinks(spouse.id, people, renderedIds)} />
+                          </React.Fragment>
+                        ))}
+                      </div>
                     </div>
+
+                    {/* 3. Descendants row placed directly under Focus capsule */}
+                    {children.length > 0 && (
+                      <div style={{ position: 'relative', marginTop: '0', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                        
+                        <div style={{ width: '2px', height: '3rem', background: '#cbd5e0' }} />
+                        
+                        <div style={{ display: 'flex', justifyContent: 'center' }}>
+                          {children.map((child, index) => {
+                            const childIsFirst = index === 0;
+                            const childIsLast = index === children.length - 1;
+                            const childIsOnly = children.length === 1;
+
+                            const childSpouses = people.filter(p => child.spouseId && p.id === child.spouseId);
+
+                            return (
+                              <div key={child.id} style={{ display: 'flex', position: 'relative', padding: '2rem 1.5rem 0', minWidth: '160px', justifyContent: 'center' }}>
+                                
+                                <div style={{ position: 'absolute', top: '0', left: '50%', width: '2px', height: '2rem', background: '#cbd5e0' }} />
+                                
+                                {!childIsOnly && (
+                                   <div style={{ 
+                                      position: 'absolute', top: 0, height: '2px', background: '#cbd5e0',
+                                      left: childIsLast ? '50%' : '0', 
+                                      width: childIsFirst || childIsLast ? '50%' : '100%',
+                                      zIndex: 0
+                                   }} />
+                                )}
+
+                                <div style={{ display: 'flex', alignItems: 'center', zIndex: 2 }}>
+                                  
+                                  {childSpouses.length > 0 && (
+                                    <div style={{ display: 'flex', visibility: 'hidden', pointerEvents: 'none' }}>
+                                      {childSpouses.map(sp => (
+                                        <React.Fragment key={`spacer-${sp.id}`}>
+                                          <div style={{ transform: 'scale(0.85)' }}>
+                                             <PersonCard person={sp} />
+                                          </div>
+                                          <div style={{ width: '15px', height: '2px', marginRight: '-0.5rem', marginLeft: '-0.5rem' }} />
+                                        </React.Fragment>
+                                      ))}
+                                    </div>
+                                  )}
+
+                                  <div style={{transform: 'scale(0.95)'}}>
+                                     <PersonCard person={child} onClick={() => onPersonClick(child)} hasChildrenIndicator={hasHiddenLinks(child.id, people, renderedIds)} />
+                                  </div>
+                                  
+                                  {childSpouses.map(sp => (
+                                    <React.Fragment key={sp.id}>
+                                      <div style={{ width: '15px', height: '2px', background: '#cbd5e0', marginRight: '-0.5rem', marginLeft: '-0.5rem', zIndex: 1 }} />
+                                      <div style={{transform: 'scale(0.85)', opacity: 0.9}}>
+                                         <PersonCard person={sp} onClick={() => onPersonClick(sp)} hasChildrenIndicator={hasHiddenLinks(sp.id, people, renderedIds)} />
+                                      </div>
+                                    </React.Fragment>
+                                  ))}
+                                </div>
+
+                              </div>
+                            )
+                          })}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
 
@@ -186,71 +256,6 @@ const TreeLayout = ({ people, onPersonClick, focusId }) => {
           })}
         </div>
       </div>
-
-      {/* 3. Descendants row perfectly aligned flex lines */}
-      {children.length > 0 && (
-        <div style={{ position: 'relative', marginTop: '3rem', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-          
-          <div style={{ width: '2px', height: '3rem', background: '#cbd5e0' }} />
-          
-          <div style={{ display: 'flex', justifyContent: 'center' }}>
-            {children.map((child, index) => {
-              const isFirst = index === 0;
-              const isLast = index === children.length - 1;
-              const isOnly = children.length === 1;
-
-              const childSpouses = people.filter(p => child.spouseId && p.id === child.spouseId);
-
-              return (
-                <div key={child.id} style={{ display: 'flex', position: 'relative', padding: '2rem 1.5rem 0', minWidth: '160px', justifyContent: 'center' }}>
-                  
-                  <div style={{ position: 'absolute', top: '0', left: '50%', width: '2px', height: '2rem', background: '#cbd5e0' }} />
-                  
-                  {!isOnly && (
-                     <div style={{ 
-                        position: 'absolute', top: 0, height: '2px', background: '#cbd5e0',
-                        left: isLast ? '50%' : '0', 
-                        width: isFirst || isLast ? '50%' : '100%',
-                        zIndex: 0
-                     }} />
-                  )}
-
-                  <div style={{ display: 'flex', alignItems: 'center', zIndex: 2 }}>
-                    
-                    {childSpouses.length > 0 && (
-                      <div style={{ display: 'flex', visibility: 'hidden', pointerEvents: 'none' }}>
-                        {childSpouses.map(sp => (
-                          <React.Fragment key={`spacer-${sp.id}`}>
-                            <div style={{ transform: 'scale(0.85)' }}>
-                               <PersonCard person={sp} />
-                            </div>
-                            <div style={{ width: '15px', height: '2px', marginRight: '-0.5rem', marginLeft: '-0.5rem' }} />
-                          </React.Fragment>
-                        ))}
-                      </div>
-                    )}
-
-                    <div style={{transform: 'scale(0.95)'}}>
-                       <PersonCard person={child} onClick={() => onPersonClick(child)} hasChildrenIndicator={hasHiddenLinks(child.id, people, renderedIds)} />
-                    </div>
-                    
-                    {childSpouses.map(sp => (
-                      <React.Fragment key={sp.id}>
-                        <div style={{ width: '15px', height: '2px', background: '#cbd5e0', marginRight: '-0.5rem', marginLeft: '-0.5rem', zIndex: 1 }} />
-                        <div style={{transform: 'scale(0.85)', opacity: 0.9}}>
-                           <PersonCard person={sp} onClick={() => onPersonClick(sp)} hasChildrenIndicator={hasHiddenLinks(sp.id, people, renderedIds)} />
-                        </div>
-                      </React.Fragment>
-                    ))}
-                  </div>
-
-                </div>
-              )
-            })}
-          </div>
-
-        </div>
-      )}
     </div>
   );
 };
