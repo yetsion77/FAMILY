@@ -109,14 +109,16 @@ const compressImage = (file, maxWidth = 800, maxHeight = 800, quality = 0.7) => 
 };
 
 export const uploadPhoto = async (file) => {
-  if (!storage) return URL.createObjectURL(file);
   try {
     const compressedFile = await compressImage(file);
-    const sRef = storageRef(storage, `photos/${Date.now()}_${compressedFile.name}`);
-    await uploadBytes(sRef, compressedFile);
-    return await getDownloadURL(sRef);
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result); // Returns base64 Data URL
+      reader.onerror = reject;
+      reader.readAsDataURL(compressedFile);
+    });
   } catch (error) {
-    console.error("Error uploading photo:", error);
+    console.error("Error converting photo to base64:", error);
     throw error;
   }
 };
