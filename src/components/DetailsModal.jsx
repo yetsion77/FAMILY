@@ -63,6 +63,16 @@ const DetailsModal = ({ person, onClose, onSave, onDelete, onQuickAdd, onFocusTa
             <form onSubmit={handleSubmit} style={{ background: 'white', padding: '1.5rem', borderRadius: '12px', border: '1px solid #cbd5e0' }}>
               <h2 style={{marginTop: '0', marginBottom: '1.5rem', color: 'var(--primary-color)' }}>עריכת פרטי דמות</h2>
               
+              <div className="form-group" style={{ textAlign: 'center', background: '#f8fafc', padding: '1rem', borderRadius: '8px' }}>
+                <label className="form-label">תמונה (אופציונלי)</label>
+                {(imageFile || formData.photoUrl) && (
+                  <div style={{ width: '80px', height: '80px', borderRadius: '50%', overflow: 'hidden', margin: '0.5rem auto 1rem', border: '2px solid #cbd5e0' }}>
+                    <img src={imageFile ? URL.createObjectURL(imageFile) : formData.photoUrl} alt="תצוגה מקדימה" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  </div>
+                )}
+                <input type="file" accept="image/*" onChange={handlePhotoSelect} className="form-input" style={{ padding: '0.5rem' }} />
+              </div>
+
               <div className="form-group">
                 <label className="form-label">שם מלא</label>
                 <input type="text" name="name" className="form-input" value={formData.name || ''} onChange={handleChange} required />
@@ -109,6 +119,11 @@ const DetailsModal = ({ person, onClose, onSave, onDelete, onQuickAdd, onFocusTa
             </form>
           ) : (
             <div style={{textAlign: 'center'}}>
+              {person.photoUrl && (
+                <div style={{ width: '120px', height: '120px', borderRadius: '50%', overflow: 'hidden', margin: '0 auto 1rem', border: '4px solid var(--card-bg)', boxShadow: '0 4px 15px rgba(0, 0, 0, 0.1)' }}>
+                  <img src={person.photoUrl} alt={person.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                </div>
+              )}
               <h2 style={{fontSize: '2.5rem', marginTop: '1rem', color: 'var(--primary-color)'}}>{person.name}</h2>
               <p className="person-dates" style={{fontSize: '1.2rem', marginBottom: '1rem', color: 'var(--text-muted)'}}>{person.birthYear} - {person.deathYear || 'עד 120'}</p>
               

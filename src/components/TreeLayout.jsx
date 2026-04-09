@@ -1,14 +1,28 @@
 import React from 'react';
 import PersonCard from './PersonCard';
 
-const checkHasSubtree = (personId, people) => {
+const hasHiddenLinks = (personId, people, renderedIds) => {
+  if (!renderedIds) return false;
   const person = people.find(p => p.id === personId);
   if (!person) return false;
-  if (person.fatherId || person.motherId || person.spouseId) return true;
-  return people.some(p => p.fatherId === personId || p.motherId === personId);
-};
 
-const AncestorsTree = ({ personId, people, onPersonClick, level = 0 }) => {
+  if (person.fatherId && !renderedIds.has(person.fatherId)) return true;
+  if (person.motherId && !renderedIds.has(person.motherId)) return true;
+  if (person.parentId && !renderedIds.has(person.parentId)) return true;
+
+  const hasUnrenderedSpouse = people.some(p => 
+    (person.spouseId === p.id || p.spouseId === person.id) && !renderedIds.has(p.id)
+  );
+  if (hasUnrenderedSpouse) return true;
+
+  const hasUnrenderedChild = people.some(p => 
+    (p.fatherId === personId || p.motherId === personId || p.parentId === personId) && !renderedIds.has(p.id)
+  );
+  if (hasUnrenderedChild) return true;
+
+  return false;
+};
+const AncestorsTree = ({ personId, people, onPersonClick, level = 0, renderedIds }) => {
   const person = people.find(p => p.id === personId);
   if (!person) return null;
 
@@ -25,18 +39,18 @@ const AncestorsTree = ({ personId, people, onPersonClick, level = 0 }) => {
       <div style={{ display: 'flex', gap: `${4 * scale}rem`, position: 'relative', paddingBottom: `${3 * scale}rem` }}>
         {father && (
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-            <AncestorsTree personId={father.id} people={people} onPersonClick={onPersonClick} level={level + 1} />
+            <AncestorsTree personId={father.id} people={people} onPersonClick={onPersonClick} level={level + 1} renderedIds={renderedIds} />
             <div style={{ transform: `scale(${scale})`, opacity, transformOrigin: 'bottom center', zIndex: 10 }}>
-              <PersonCard person={father} onClick={() => onPersonClick(father)} hasChildrenIndicator={checkHasSubtree(father.id, people)} />
+              <PersonCard person={father} onClick={() => onPersonClick(father)} hasChildrenIndicator={hasHiddenLinks(father.id, people, renderedIds)} />
             </div>
           </div>
         )}
         
         {mother && (
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-            <AncestorsTree personId={mother.id} people={people} onPersonClick={onPersonClick} level={level + 1} />
+            <AncestorsTree personId={mother.id} people={people} onPersonClick={onPersonClick} level={level + 1} renderedIds={renderedIds} />
             <div style={{ transform: `scale(${scale})`, opacity, transformOrigin: 'bottom center', zIndex: 10 }}>
-              <PersonCard person={mother} onClick={() => onPersonClick(mother)} hasChildrenIndicator={checkHasSubtree(mother.id, people)} />
+              <PersonCard person={mother} onClick={() => onPersonClick(mother)} hasChildrenIndicator={hasHiddenLinks(mother.id, people, renderedIds)} />
             </div>
           </div>
         )}
@@ -74,6 +88,26 @@ const TreeLayout = ({ people, onPersonClick, focusId }) => {
      { type: 'focus', node: focusPerson }
   ];
 
+  const renderedIds = new Set();
+  const markRendered = id => { if(id) renderedIds.add(id); };
+  
+  markRendered(focusPerson.id);
+  spouses.forEach(s => markRendered(s.id));
+  siblings.forEach(s => markRendered(s.id));
+  children.forEach(c => {
+    markRendered(c.id);
+    const cSpouses = people.filter(p => c.spouseId && p.id === c.spouseId);
+    cSpouses.forEach(csp => markRendered(csp.id));
+  });
+
+  const addAncestorsToSet = (personId) => {
+    const p = people.find(x => x.id === personId);
+    if (!p) return;
+    if (p.fatherId) { markRendered(p.fatherId); addAncestorsToSet(p.fatherId); }
+    if (p.motherId) { markRendered(p.motherId); addAncestorsToSet(p.motherId); }
+  };
+  addAncestorsToSet(focusPerson.id);
+
   const hasParentsFlag = focusPerson.fatherId || focusPerson.motherId;
 
   return (
@@ -81,7 +115,7 @@ const TreeLayout = ({ people, onPersonClick, focusId }) => {
       
       {/* 1. Ancestors row */}
       <div style={{ marginBottom: '0' }}>
-         <AncestorsTree personId={focusPerson.id} people={people} onPersonClick={onPersonClick} />
+         <AncestorsTree personId={focusPerson.id} people={people} onPersonClick={onPersonClick} renderedIds={renderedIds} />
       </div>
 
       {/* 2. Focus Row (Siblings + Focus Person) with precise crossbar aligned with Ancestors stem */}
@@ -111,25 +145,39 @@ const TreeLayout = ({ people, onPersonClick, focusId }) => {
                 {item.type === 'sibling' ? (
                   <div style={{ display: 'flex', alignItems: 'flex-start', zIndex: 2 }}>
                     <div style={{transform: 'scale(0.85)', opacity: 0.8}}>
-                       <PersonCard person={item.node} onClick={() => onPersonClick(item.node)} hasChildrenIndicator={checkHasSubtree(item.node.id, people)} />
+                       <PersonCard person={item.node} onClick={() => onPersonClick(item.node)} hasChildrenIndicator={hasHiddenLinks(item.node.id, people, renderedIds)} />
                     </div>
                   </div>
                 ) : (
-                  <div style={{ 
-                    display: 'flex', gap: '1rem', background: 'var(--card-bg)', 
-                    padding: '1.2rem', borderRadius: '1.5rem', border: '2px solid rgba(44, 62, 80, 0.1)',
-                    boxShadow: '0 10px 30px rgba(0, 0, 0, 0.05)', zIndex: 2
-                  }}>
-                    <PersonCard person={item.node} onClick={() => onPersonClick(item.node)} isFocus={true} hasChildrenIndicator={checkHasSubtree(item.node.id, people)} />
-                    
-                    {spouses.map(spouse => (
-                      <React.Fragment key={spouse.id}>
-                        <div style={{ width: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                          <div style={{ width: '100%', height: '3px', background: 'var(--primary-color)', opacity: 0.5 }} />
-                        </div>
-                        <PersonCard person={spouse} onClick={() => onPersonClick(spouse)} hasChildrenIndicator={checkHasSubtree(spouse.id, people)} />
-                      </React.Fragment>
-                    ))}
+                  <div style={{ display: 'flex', alignItems: 'center' }}>
+                    {spouses.length > 0 && (
+                       <div style={{ display: 'flex', gap: '1rem', visibility: 'hidden', pointerEvents: 'none' }}>
+                         {spouses.map(sp => (
+                           <React.Fragment key={`spacer-${sp.id}`}>
+                             <div style={{ width: '20px' }}></div>
+                             <PersonCard person={sp} />
+                           </React.Fragment>
+                         ))}
+                         <div style={{ width: 0 }}></div>
+                       </div>
+                    )}
+
+                    <div style={{ 
+                      display: 'flex', gap: '1rem', background: 'var(--card-bg)', 
+                      padding: '1.2rem', borderRadius: '1.5rem', border: '2px solid rgba(44, 62, 80, 0.1)',
+                      boxShadow: '0 10px 30px rgba(0, 0, 0, 0.05)', zIndex: 2
+                    }}>
+                      <PersonCard person={item.node} onClick={() => onPersonClick(item.node)} isFocus={true} hasChildrenIndicator={hasHiddenLinks(item.node.id, people, renderedIds)} />
+                      
+                      {spouses.map(spouse => (
+                        <React.Fragment key={spouse.id}>
+                          <div style={{ width: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <div style={{ width: '100%', height: '3px', background: 'var(--primary-color)', opacity: 0.5 }} />
+                          </div>
+                          <PersonCard person={spouse} onClick={() => onPersonClick(spouse)} hasChildrenIndicator={hasHiddenLinks(spouse.id, people, renderedIds)} />
+                        </React.Fragment>
+                      ))}
+                    </div>
                   </div>
                 )}
 
@@ -168,15 +216,29 @@ const TreeLayout = ({ people, onPersonClick, focusId }) => {
                   )}
 
                   <div style={{ display: 'flex', alignItems: 'center', zIndex: 2 }}>
+                    
+                    {childSpouses.length > 0 && (
+                      <div style={{ display: 'flex', visibility: 'hidden', pointerEvents: 'none' }}>
+                        {childSpouses.map(sp => (
+                          <React.Fragment key={`spacer-${sp.id}`}>
+                            <div style={{ transform: 'scale(0.85)' }}>
+                               <PersonCard person={sp} />
+                            </div>
+                            <div style={{ width: '15px', height: '2px', marginRight: '-0.5rem', marginLeft: '-0.5rem' }} />
+                          </React.Fragment>
+                        ))}
+                      </div>
+                    )}
+
                     <div style={{transform: 'scale(0.95)'}}>
-                       <PersonCard person={child} onClick={() => onPersonClick(child)} hasChildrenIndicator={checkHasSubtree(child.id, people)} />
+                       <PersonCard person={child} onClick={() => onPersonClick(child)} hasChildrenIndicator={hasHiddenLinks(child.id, people, renderedIds)} />
                     </div>
                     
                     {childSpouses.map(sp => (
                       <React.Fragment key={sp.id}>
                         <div style={{ width: '15px', height: '2px', background: '#cbd5e0', marginRight: '-0.5rem', marginLeft: '-0.5rem', zIndex: 1 }} />
                         <div style={{transform: 'scale(0.85)', opacity: 0.9}}>
-                           <PersonCard person={sp} onClick={() => onPersonClick(sp)} hasChildrenIndicator={checkHasSubtree(sp.id, people)} />
+                           <PersonCard person={sp} onClick={() => onPersonClick(sp)} hasChildrenIndicator={hasHiddenLinks(sp.id, people, renderedIds)} />
                         </div>
                       </React.Fragment>
                     ))}

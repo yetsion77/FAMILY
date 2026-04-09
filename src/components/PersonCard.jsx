@@ -22,6 +22,11 @@ const PersonCard = ({ person, onClick, isFocus, hasChildrenIndicator }) => {
       }} 
       onClick={onClick}
     >
+      {person.photoUrl && (
+        <div style={{ width: '48px', height: '48px', borderRadius: '50%', overflow: 'hidden', marginBottom: '0.5rem', border: '2px solid rgba(255,255,255,0.8)', flexShrink: 0, boxShadow: '0 2px 5px rgba(0,0,0,0.1)' }}>
+          <img src={person.photoUrl} alt={person.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+        </div>
+      )}
       <div className="person-name">{person.name || "שם חסר"}</div>
       {(person.birthYear || person.deathYear) && (
         <div className="person-dates" style={{ marginTop: '0.5rem' }}>
