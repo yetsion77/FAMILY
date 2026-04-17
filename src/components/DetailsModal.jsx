@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { X, Save, Eye, Edit3 } from 'lucide-react';
 import { uploadPhoto } from '../firebase/api';
 
-const DetailsModal = ({ person, onClose, onSave, onDelete, onQuickAdd, onFocusTarget }) => {
+const DetailsModal = ({ person, onClose, onSave, onDelete, onQuickAdd, onFocusTarget, onRemoveRelation }) => {
   const [formData, setFormData] = useState({ ...person });
   const [imageFile, setImageFile] = useState(null);
   const [saving, setSaving] = useState(false);
@@ -102,6 +102,19 @@ const DetailsModal = ({ person, onClose, onSave, onDelete, onQuickAdd, onFocusTa
                 <textarea name="details" className="form-textarea" rows="4" value={formData.details || ''} onChange={handleChange}></textarea>
               </div>
 
+              <div className="form-group" style={{ display: 'flex', alignItems: 'center', gap: '0.8rem', background: '#f8fafc', padding: '1rem', borderRadius: '8px' }}>
+                <input 
+                  type="checkbox" 
+                  id="preventAutoSpouseAssign"
+                  style={{ width: '1.2rem', height: '1.2rem', cursor: 'pointer' }}
+                  checked={formData.preventAutoSpouseAssign || false} 
+                  onChange={(e) => setFormData({ ...formData, preventAutoSpouseAssign: e.target.checked })} 
+                />
+                <label htmlFor="preventAutoSpouseAssign" style={{ margin: 0, color: 'var(--text-color)', fontSize: '0.95rem', cursor: 'pointer' }}>
+                  למקרים נדירים: מנע שיוך אוטומטי של בן/בת הזוג של ההורים כהורה לדמות זו
+                </label>
+              </div>
+
               <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', marginTop: '1.5rem' }}>
                 <button type="submit" className="primary-btn" disabled={saving}>
                   <Save size={18} /> {saving ? 'שומר...' : 'שמור שינויים לפרטים'}
@@ -158,9 +171,24 @@ const DetailsModal = ({ person, onClose, onSave, onDelete, onQuickAdd, onFocusTa
            <div style={{ borderTop: '2px dashed #cbd5e0', paddingTop: '1.5rem' }}>
              <h3 style={{ marginBottom: '1rem', color: 'var(--primary-color)', textAlign: 'center' }}>בניית העץ: עורק קשרים</h3>
              <div style={{ display: 'flex', justifyContent: 'center', flexWrap: 'wrap', gap: '0.8rem' }}>
-               <button type="button" className="mode-toggle" style={{background: '#718096'}} onClick={() => initiateQuickAdd('father', 'male')}>+ אבא</button>
-               <button type="button" className="mode-toggle" style={{background: '#718096'}} onClick={() => initiateQuickAdd('mother', 'female')}>+ אמא</button>
-               <button type="button" className="mode-toggle" style={{background: '#718096'}} onClick={() => initiateQuickAdd('spouse', person.gender === 'male' ? 'female' : 'male')}>+ בן/בת זוג</button>
+               {!person.fatherId ? (
+                 <button type="button" className="mode-toggle" style={{background: '#718096'}} onClick={() => initiateQuickAdd('father', 'male')}>+ אבא</button>
+               ) : (
+                 <button type="button" className="mode-toggle" style={{background: '#e53e3e', fontSize: '0.85rem'}} onClick={() => onRemoveRelation(person.id, 'father')}>- נתק אבא</button>
+               )}
+               
+               {!person.motherId ? (
+                 <button type="button" className="mode-toggle" style={{background: '#718096'}} onClick={() => initiateQuickAdd('mother', 'female')}>+ אמא</button>
+               ) : (
+                 <button type="button" className="mode-toggle" style={{background: '#e53e3e', fontSize: '0.85rem'}} onClick={() => onRemoveRelation(person.id, 'mother')}>- נתק אמא</button>
+               )}
+
+               {!person.spouseId ? (
+                 <button type="button" className="mode-toggle" style={{background: '#718096'}} onClick={() => initiateQuickAdd('spouse', person.gender === 'male' ? 'female' : 'male')}>+ בן/בת זוג</button>
+               ) : (
+                 <button type="button" className="mode-toggle" style={{background: '#e53e3e', fontSize: '0.85rem'}} onClick={() => onRemoveRelation(person.id, 'spouse')}>- נתק בן/בת זוג</button>
+               )}
+               
                <button type="button" className="mode-toggle" style={{background: '#718096'}} onClick={() => initiateQuickAdd('child', 'male')}>+ ילד/ה</button>
                <button type="button" className="mode-toggle" style={{background: '#718096'}} onClick={() => initiateQuickAdd('sibling', 'male')}>+ אח/ות</button>
              </div>

@@ -12,9 +12,61 @@ function App() {
   const [focusId, setFocusId] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  const syncFamilyData = async (initialData) => {
+    const workingData = initialData.map(p => ({...p}));
+    const updateMap = {};
+
+    const setUpdate = (id, key, value) => {
+      if (!updateMap[id]) updateMap[id] = {};
+      const person = workingData.find(p => p.id === id);
+      if (person && person[key] !== value) {
+        updateMap[id][key] = value;
+        person[key] = value;
+      }
+    };
+
+    for (const person of workingData) {
+      if (person.preventAutoSpouseAssign) continue;
+
+      const father = person.fatherId ? workingData.find(p => p.id === person.fatherId) : null;
+      const mother = person.motherId ? workingData.find(p => p.id === person.motherId) : null;
+
+      if (father && father.spouseId && !person.motherId) {
+        setUpdate(person.id, 'motherId', father.spouseId);
+      }
+      if (mother && mother.spouseId && !person.fatherId) {
+        setUpdate(person.id, 'fatherId', mother.spouseId);
+      }
+
+      // Parents of the same child should automatically be considered a couple if they don't have spouses
+      if (father && mother) {
+        if (!father.spouseId && !mother.spouseId) {
+          setUpdate(father.id, 'spouseId', mother.id);
+          setUpdate(mother.id, 'spouseId', father.id);
+        }
+      }
+    }
+
+    const updatesList = Object.keys(updateMap).filter(id => Object.keys(updateMap[id]).length > 0);
+    if (updatesList.length > 0) {
+      for (const id of updatesList) {
+        const originalPerson = initialData.find(p => p.id === id);
+        await updateFamilyMember(id, { ...originalPerson, ...updateMap[id] });
+      }
+      return true; // Changes were made
+    }
+    return false;
+  };
+
   const loadData = async () => {
     setLoading(true);
-    const data = await getFamilyMembers();
+    let data = await getFamilyMembers();
+    
+    const didSync = await syncFamilyData(data);
+    if (didSync) {
+      data = await getFamilyMembers();
+    }
+
     setPeople(data);
     
     if (!focusId && data.length > 0) setFocusId(data[0].id);
@@ -93,6 +145,35 @@ function App() {
     });
   };
 
+  const handleRemoveRelation = async (sourceId, relationType) => {
+    const sourcePerson = people.find(p => p.id === sourceId);
+    if (!sourcePerson) return;
+
+    let updatedSource = { ...sourcePerson };
+    
+    if (relationType === 'father') {
+      updatedSource.fatherId = null;
+    } else if (relationType === 'mother') {
+      updatedSource.motherId = null;
+    } else if (relationType === 'spouse') {
+      const spouseId = updatedSource.spouseId;
+      updatedSource.spouseId = null;
+      
+      if (spouseId) {
+        const spouse = people.find(p => p.id === spouseId);
+        if (spouse) {
+          await updateFamilyMember(spouseId, { ...spouse, spouseId: null });
+        }
+      }
+    }
+
+    await updateFamilyMember(sourceId, updatedSource);
+    await loadData();
+    
+    // We update the local selectedPerson state to reflect real-time changes avoiding modal close
+    setSelectedPerson(prev => ({ ...prev, ...updatedSource }));
+  };
+
   const handleAddSpecificRelative = async (sourceId, relationType, newPersonData) => {
     const sourcePerson = people.find(p => p.id === sourceId);
     if (!sourcePerson) return;
@@ -117,6 +198,7 @@ function App() {
       
       const childrenToUpdate = people.filter(p => p.fatherId === sourceId || p.motherId === sourceId);
       for (const child of childrenToUpdate) {
+        if (child.preventAutoSpouseAssign) continue;
         let childUpdated = { ...child };
         let madeChange = false;
         
@@ -137,10 +219,10 @@ function App() {
       let childUpdate = { ...newDoc };
       if (sourcePerson.gender === 'male') {
         childUpdate.fatherId = sourceId;
-        if (sourcePerson.spouseId) childUpdate.motherId = sourcePerson.spouseId;
+        if (sourcePerson.spouseId && !childUpdate.preventAutoSpouseAssign) childUpdate.motherId = sourcePerson.spouseId;
       } else if (sourcePerson.gender === 'female') {
         childUpdate.motherId = sourceId;
-        if (sourcePerson.spouseId) childUpdate.fatherId = sourcePerson.spouseId;
+        if (sourcePerson.spouseId && !childUpdate.preventAutoSpouseAssign) childUpdate.fatherId = sourcePerson.spouseId;
       } else {
         childUpdate.fatherId = sourceId;
       }
@@ -198,6 +280,7 @@ function App() {
           onDelete={handleDeletePerson}
           onQuickAdd={handleAddSpecificRelative}
           onFocusTarget={handleFocusTarget}
+          onRemoveRelation={handleRemoveRelation}
         />
       )}
     </div>
