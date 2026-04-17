@@ -36,7 +36,7 @@ const AncestorsTree = ({ personId, people, onPersonClick, level = 0, renderedIds
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative' }}>
-      <div style={{ display: 'flex', gap: `${4 * scale}rem`, position: 'relative', paddingBottom: `${3 * scale}rem` }}>
+      <div style={{ display: 'flex', alignItems: 'flex-end', gap: `${4 * scale}rem`, position: 'relative', paddingBottom: `${3 * scale}rem` }}>
         {father && (
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
             <AncestorsTree personId={father.id} people={people} onPersonClick={onPersonClick} level={level + 1} renderedIds={renderedIds} />
