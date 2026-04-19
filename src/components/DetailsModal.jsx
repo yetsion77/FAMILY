@@ -138,12 +138,14 @@ const DetailsModal = ({ person, onClose, onSave, onDelete, onQuickAdd, onFocusTa
                 </div>
               )}
               <h2 style={{fontSize: '2.5rem', marginTop: '1rem', color: 'var(--primary-color)'}}>{person.name}</h2>
-              <p className="person-dates" style={{fontSize: '1.2rem', marginBottom: '1rem', color: 'var(--text-muted)', direction: 'rtl'}}>
-                {person.birthYear && !person.deathYear ? 
-                  `${person.gender === 'female' ? 'נולדה' : 'נולד'}: ${person.birthYear}` : 
-                  `${person.birthYear || '?'} - ${person.deathYear || '?'}`
-                }
-              </p>
+              {(person.birthYear?.trim() || person.deathYear?.trim()) ? (
+                <p className="person-dates" style={{fontSize: '1.2rem', marginBottom: '1rem', color: 'var(--text-muted)', direction: 'rtl'}}>
+                  {person.birthYear?.trim() && !person.deathYear?.trim() ? 
+                    `${person.gender === 'female' ? 'נולדה' : 'נולד'}: ${person.birthYear.trim()}` : 
+                    `${person.birthYear?.trim() || '?'} - ${person.deathYear?.trim() || '?'}`
+                  }
+                </p>
+              ) : null}
               
               {person.details && (
                 <div style={{background: '#f8fafc', padding: '1.5rem', borderRadius: '12px', lineHeight: '1.8', maxWidth: '600px', margin: '1rem auto' }}>

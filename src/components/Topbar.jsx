@@ -4,6 +4,7 @@ import { Network, Search } from 'lucide-react';
 const Topbar = ({ people = [], onFocusTarget }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [showResults, setShowResults] = useState(false);
+  const [logoClicks, setLogoClicks] = useState(0);
   const wrapperRef = useRef(null);
 
   useEffect(() => {
@@ -26,9 +27,24 @@ const Topbar = ({ people = [], onFocusTarget }) => {
     if (onFocusTarget) onFocusTarget(id);
   };
 
+  const handleExportBackup = () => {
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(people, null, 2));
+    const downloadAnchorNode = document.createElement('a');
+    downloadAnchorNode.setAttribute("href", dataStr);
+    const dateStr = new Date().toISOString().split('T')[0];
+    downloadAnchorNode.setAttribute("download", `family_backup_${dateStr}.json`);
+    document.body.appendChild(downloadAnchorNode);
+    downloadAnchorNode.click();
+    downloadAnchorNode.remove();
+    setLogoClicks(0); // Optional: hide the button after downloading
+  };
+
   return (
     <div className="topbar glass-card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
+      <div 
+        style={{ display: 'flex', alignItems: 'center', gap: '0.8rem', cursor: 'pointer', userSelect: 'none' }} 
+        onClick={() => setLogoClicks(prev => prev + 1)}
+      >
         <Network color="var(--primary-color)" size={28} />
         <h1 style={{ margin: 0, fontSize: '1.5rem', color: 'var(--primary-color)' }}>עץ משפחה</h1>
       </div>
@@ -82,6 +98,21 @@ const Topbar = ({ people = [], onFocusTarget }) => {
           </div>
         )}
       </div>
+
+      {logoClicks >= 5 && (
+        <button 
+          onClick={handleExportBackup} 
+          style={{ 
+            background: '#48bb78', color: 'white', border: 'none', 
+            padding: '0.6rem 1rem', borderRadius: '8px', 
+            cursor: 'pointer', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '0.5rem',
+            boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
+          }}
+          title="הורד גיבוי של מסד הנתונים"
+        >
+          💾 לשמור גיבוי גיטהאב
+        </button>
+      )}
     </div>
   );
 };
