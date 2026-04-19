@@ -242,7 +242,7 @@ function App() {
 
   return (
     <div className="app-container">
-      <Topbar />
+      <Topbar people={people} onFocusTarget={handleFocusTarget} />
       
       {people.length === 0 && (
         <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1rem' }}>
