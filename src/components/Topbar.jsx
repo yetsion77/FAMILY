@@ -110,7 +110,7 @@ const Topbar = ({ people = [], onFocusTarget }) => {
           }}
           title="הורד גיבוי של מסד הנתונים"
         >
-          💾 לשמור גיבוי גיטהאב
+          💾 שמור גיבוי נתונים
         </button>
       )}
     </div>
