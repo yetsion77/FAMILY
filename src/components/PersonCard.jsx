@@ -29,8 +29,12 @@ const PersonCard = ({ person, onClick, isFocus, hasChildrenIndicator }) => {
       )}
       <div className="person-name">{person.name || "שם חסר"}</div>
       {(person.birthYear || person.deathYear) && (
-        <div className="person-dates" style={{ marginTop: '0.5rem' }}>
-          {person.birthYear} - {person.deathYear || 'היום'}
+        <div className="person-dates" style={{ marginTop: '0.5rem', direction: 'rtl' }}>
+          {person.birthYear && !person.deathYear ? (
+            `${person.gender === 'female' ? 'נולדה' : 'נולד'}: ${person.birthYear}`
+          ) : (
+            `${person.birthYear || '?'} - ${person.deathYear || '?'}`
+          )}
         </div>
       )}
 
