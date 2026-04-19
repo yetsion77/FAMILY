@@ -38,25 +38,27 @@ const AncestorsTree = ({ personId, people, onPersonClick, level = 0, renderedIds
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative' }}>
       <div style={{ display: 'flex', alignItems: 'flex-end', gap: `${4 * scale}rem`, position: 'relative', paddingBottom: `${3 * scale}rem` }}>
         {father && (
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative' }}>
             <AncestorsTree personId={father.id} people={people} onPersonClick={onPersonClick} level={level + 1} renderedIds={renderedIds} />
             <div style={{ transform: `scale(${scale})`, opacity, transformOrigin: 'bottom center', zIndex: 10 }}>
               <PersonCard person={father} onClick={() => onPersonClick(father)} hasChildrenIndicator={hasHiddenLinks(father.id, people, renderedIds)} />
             </div>
+            {mother && (
+              <div className="tree-line-horizontal" style={{ position: 'absolute', bottom: `${3 * scale}rem`, right: '50%', width: `calc(50% + ${2 * scale}rem)`, height: '2px', zIndex: 1 }} />
+            )}
           </div>
         )}
         
         {mother && (
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative' }}>
             <AncestorsTree personId={mother.id} people={people} onPersonClick={onPersonClick} level={level + 1} renderedIds={renderedIds} />
             <div style={{ transform: `scale(${scale})`, opacity, transformOrigin: 'bottom center', zIndex: 10 }}>
               <PersonCard person={mother} onClick={() => onPersonClick(mother)} hasChildrenIndicator={hasHiddenLinks(mother.id, people, renderedIds)} />
             </div>
+            {father && (
+              <div className="tree-line-horizontal" style={{ position: 'absolute', bottom: `${3 * scale}rem`, left: '50%', width: `calc(50% + ${2 * scale}rem)`, height: '2px', zIndex: 1 }} />
+            )}
           </div>
-        )}
-
-        {father && mother && (
-          <div className="tree-line-horizontal" style={{ bottom: `${3 * scale}rem`, left: '25%', width: '50%', height: '2px', zIndex: 1 }} />
         )}
       </div>
 
