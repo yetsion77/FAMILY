@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { UserPlus, Leaf } from 'lucide-react';
 import Topbar from './components/Topbar';
 import TreeLayout from './components/TreeLayout';
@@ -11,6 +11,14 @@ function App() {
   const [selectedPerson, setSelectedPerson] = useState(null);
   const [focusId, setFocusId] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  // Drag-to-scroll state
+  const containerRef = useRef(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [startX, setStartX] = useState(0);
+  const [startY, setStartY] = useState(0);
+  const [scrollLeft, setScrollLeft] = useState(0);
+  const [scrollTop, setScrollTop] = useState(0);
 
   const syncFamilyData = async (initialData) => {
     const workingData = initialData.map(p => ({...p}));
@@ -244,6 +252,34 @@ function App() {
     setSelectedPerson({ ...updatedSource });
   };
 
+  const handleMouseDown = (e) => {
+    if (!containerRef.current) return;
+    setIsDragging(true);
+    setStartX(e.pageX - containerRef.current.offsetLeft);
+    setStartY(e.pageY - containerRef.current.offsetTop);
+    setScrollLeft(containerRef.current.scrollLeft);
+    setScrollTop(containerRef.current.scrollTop);
+  };
+
+  const handleMouseLeave = () => {
+    setIsDragging(false);
+  };
+
+  const handleMouseUp = () => {
+    setIsDragging(false);
+  };
+
+  const handleMouseMove = (e) => {
+    if (!isDragging || !containerRef.current) return;
+    e.preventDefault();
+    const x = e.pageX - containerRef.current.offsetLeft;
+    const y = e.pageY - containerRef.current.offsetTop;
+    const walkX = (x - startX) * 1.5; // Drag speed multiplier
+    const walkY = (y - startY) * 1.5;
+    containerRef.current.scrollLeft = scrollLeft - walkX;
+    containerRef.current.scrollTop = scrollTop - walkY;
+  };
+
   return (
     <div className="app-container">
       <Topbar people={people} onFocusTarget={handleFocusTarget} />
@@ -264,7 +300,19 @@ function App() {
           </div>
         </div>
       ) : (
-        <section className="tree-container glass-card" style={{ overflow: 'auto' }}>
+        <section 
+          className="tree-container glass-card" 
+          ref={containerRef}
+          onMouseDown={handleMouseDown}
+          onMouseLeave={handleMouseLeave}
+          onMouseUp={handleMouseUp}
+          onMouseMove={handleMouseMove}
+          style={{ 
+            overflow: 'auto', 
+            cursor: isDragging ? 'grabbing' : 'grab',
+            userSelect: isDragging ? 'none' : 'auto'
+          }}
+        >
           {people.length === 0 ? (
             <div style={{ textAlign: 'center', color: 'var(--text-muted)', paddingTop: '3rem' }}>
               <h3>העץ ריק כרגע</h3>
