@@ -17,9 +17,14 @@ const DetailsModal = ({ person, onClose, onSave, onDelete, onQuickAdd, onFocusTa
     const file = e.target.files[0];
     if (!file || !person.id) return;
     
+    const customName = window.prompt("הזן שם או כיתוב שיופיע מתחת לקובץ (לא חובה):");
+    
     setUploadingDoc(true);
     try {
       const docData = await uploadDocument(file, person.id);
+      if (customName && customName.trim()) {
+        docData.name = customName.trim();
+      }
       const updatedDocs = [...(person.documents || []), docData];
       const newPersonData = { ...person, documents: updatedDocs };
       setFormData(prev => ({ ...prev, documents: updatedDocs }));
@@ -29,6 +34,30 @@ const DetailsModal = ({ person, onClose, onSave, onDelete, onQuickAdd, onFocusTa
       console.error(err);
     }
     setUploadingDoc(false);
+  };
+
+  const updateDocName = (e, idx) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const newName = window.prompt("ערוך כיתוב:", person.documents[idx].name || "");
+    if (newName && newName.trim() !== "") {
+      const updatedDocs = [...person.documents];
+      updatedDocs[idx].name = newName.trim();
+      const newPersonData = { ...person, documents: updatedDocs };
+      setFormData(prev => ({ ...prev, documents: updatedDocs }));
+      onSave(newPersonData);
+    }
+  };
+
+  const deleteDoc = (e, idx) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (window.confirm("האם למחוק קובץ זה? (הקובץ יוסר מהדמות)")) {
+      const updatedDocs = person.documents.filter((_, i) => i !== idx);
+      const newPersonData = { ...person, documents: updatedDocs };
+      setFormData(prev => ({ ...prev, documents: updatedDocs }));
+      onSave(newPersonData);
+    }
   };
 
   const handleChange = (e) => {
@@ -214,26 +243,35 @@ const DetailsModal = ({ person, onClose, onSave, onDelete, onQuickAdd, onFocusTa
                 {person.documents && person.documents.length > 0 ? (
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', direction: 'rtl' }}>
                     {person.documents.map((doc, idx) => (
-                      <a 
-                        key={idx} 
-                        href={doc.url} 
-                        target="_blank" 
-                        rel="noopener noreferrer" 
-                        style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '0.8rem', background: 'white', borderRadius: '8px', border: '1px solid #cbd5e0', textDecoration: 'none', color: 'var(--text-color)', width: '100px', transition: 'transform 0.2s' }}
-                        onMouseOver={e => e.currentTarget.style.transform = 'translateY(-3px)'}
-                        onMouseOut={e => e.currentTarget.style.transform = 'translateY(0)'}
-                      >
-                        {doc.type?.includes('image') ? (
-                          <div style={{ width: '60px', height: '60px', marginBottom: '0.5rem', borderRadius: '4px', overflow: 'hidden' }}>
-                            <img src={doc.url} alt={doc.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                          </div>
-                        ) : (
-                          <FileText size={40} color="#e53e3e" style={{ marginBottom: '0.5rem' }} />
-                        )}
-                        <span style={{ fontSize: '0.75rem', textAlign: 'center', wordBreak: 'break-all', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', width: '100%' }} title={doc.name}>
-                          {doc.name}
-                        </span>
-                      </a>
+                      <div key={idx} style={{ display: 'flex', flexDirection: 'column' }}>
+                        <a 
+                          href={doc.url} 
+                          target="_blank" 
+                          rel="noopener noreferrer" 
+                          style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '0.8rem', background: 'white', borderRadius: '8px', border: '1px solid #cbd5e0', textDecoration: 'none', color: 'var(--text-color)', width: '120px', transition: 'transform 0.2s' }}
+                          onMouseOver={e => e.currentTarget.style.transform = 'translateY(-3px)'}
+                          onMouseOut={e => e.currentTarget.style.transform = 'translateY(0)'}
+                        >
+                          {doc.type?.includes('image') ? (
+                            <div style={{ width: '80px', height: '80px', marginBottom: '0.5rem', borderRadius: '4px', overflow: 'hidden' }}>
+                              <img src={doc.url} alt={doc.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                            </div>
+                          ) : (
+                            <FileText size={40} color="#e53e3e" style={{ marginBottom: '0.5rem' }} />
+                          )}
+                          <span style={{ fontSize: '0.8rem', textAlign: 'center', wordBreak: 'break-word', width: '100%', minHeight: '2.4em' }} title={doc.name}>
+                            {doc.name}
+                          </span>
+                        </a>
+                        <div style={{ display: 'flex', justifyContent: 'center', gap: '0.8rem', marginTop: '0.4rem' }}>
+                          <button onClick={(e) => updateDocName(e, idx)} style={{ background: 'none', border: 'none', color: '#4299e1', cursor: 'pointer', padding: '0.2rem', display: 'flex', alignItems: 'center' }} title="ערוך כיתוב">
+                            <Edit3 size={16} />
+                          </button>
+                          <button onClick={(e) => deleteDoc(e, idx)} style={{ background: 'none', border: 'none', color: '#e53e3e', cursor: 'pointer', padding: '0.2rem', display: 'flex', alignItems: 'center' }} title="מחק מסמך">
+                            <X size={16} />
+                          </button>
+                        </div>
+                      </div>
                     ))}
                   </div>
                 ) : (
