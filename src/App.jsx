@@ -98,7 +98,11 @@ function App() {
     // We intentionally don't close the modal if they are just editing details, 
     // but the modal will manage its own internal visual state.
     // For origin person creation, we close it.
-    if (!updatedData.id) setSelectedPerson(null);
+    if (!updatedData.id) {
+      setSelectedPerson(null);
+    } else {
+      setSelectedPerson({ ...savedPerson });
+    }
   };
 
   const handleDeletePerson = async (id) => {

@@ -17,6 +17,19 @@ export const getFamilyMembers = async () => {
   }
 };
 
+export const uploadDocument = async (file, personId) => {
+  if (!storage) throw new Error("Storage not initialized");
+  
+  const fileExt = file.name.split('.').pop() || '';
+  const fileId = `${Date.now()}_${Math.random().toString(36).substring(2)}`;
+  const fileName = fileExt ? `${fileId}.${fileExt}` : fileId;
+  
+  const fileRef = storageRef(storage, `documents/${personId}/${fileName}`);
+  await uploadBytes(fileRef, file);
+  const url = await getDownloadURL(fileRef);
+  return { url, name: file.name, type: file.type };
+};
+
 export const addFamilyMember = async (memberData) => {
   if (!db) return null;
   try {

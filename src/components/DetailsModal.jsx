@@ -1,16 +1,35 @@
 import React, { useState } from 'react';
-import { X, Save, Eye, Edit3 } from 'lucide-react';
-import { uploadPhoto } from '../firebase/api';
+import { X, Save, Eye, Edit3, FileText, Upload } from 'lucide-react';
+import { uploadPhoto, uploadDocument } from '../firebase/api';
 
 const DetailsModal = ({ person, onClose, onSave, onDelete, onQuickAdd, onFocusTarget, onRemoveRelation }) => {
   const [formData, setFormData] = useState({ ...person });
   const [imageFile, setImageFile] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [uploadingDoc, setUploadingDoc] = useState(false);
   
   const [isEditingDetails, setIsEditingDetails] = useState(!person.id || person._isNewOrigin);
 
   const [addingType, setAddingType] = useState(null);
   const [newRelData, setNewRelData] = useState({ name: '', gender: 'male' });
+
+  const handleDocumentUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file || !person.id) return;
+    
+    setUploadingDoc(true);
+    try {
+      const docData = await uploadDocument(file, person.id);
+      const updatedDocs = [...(person.documents || []), docData];
+      const newPersonData = { ...person, documents: updatedDocs };
+      setFormData(prev => ({ ...prev, documents: updatedDocs }));
+      onSave(newPersonData);
+    } catch (err) {
+      alert("שגיאה בהעלאת הקובץ");
+      console.error(err);
+    }
+    setUploadingDoc(false);
+  };
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -168,6 +187,60 @@ const DetailsModal = ({ person, onClose, onSave, onDelete, onQuickAdd, onFocusTa
                 >
                   <Edit3 size={18} /> ערוך קורות חייו
                 </button>
+              </div>
+
+              {/* Media & Documents Gallery */}
+              <div style={{ marginTop: '2rem', background: '#f8fafc', padding: '1.5rem', borderRadius: '12px', border: '1px solid #e2e8f0', textAlign: 'right' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', direction: 'rtl' }}>
+                  <h3 style={{ margin: 0, color: 'var(--primary-color)' }}>מסמכים ותמונות נוספות</h3>
+                  <div>
+                    <input 
+                      type="file" 
+                      id="doc-upload" 
+                      style={{ display: 'none' }} 
+                      onChange={handleDocumentUpload} 
+                      accept="image/*,.pdf" 
+                    />
+                    <label 
+                      htmlFor="doc-upload" 
+                      className="mode-toggle" 
+                      style={{ background: '#4299e1', color: 'white', display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: uploadingDoc ? 'not-allowed' : 'pointer' }}
+                    >
+                      <Upload size={16} /> {uploadingDoc ? 'מעלה...' : 'הוסף קובץ'}
+                    </label>
+                  </div>
+                </div>
+                
+                {person.documents && person.documents.length > 0 ? (
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', direction: 'rtl' }}>
+                    {person.documents.map((doc, idx) => (
+                      <a 
+                        key={idx} 
+                        href={doc.url} 
+                        target="_blank" 
+                        rel="noopener noreferrer" 
+                        style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '0.8rem', background: 'white', borderRadius: '8px', border: '1px solid #cbd5e0', textDecoration: 'none', color: 'var(--text-color)', width: '100px', transition: 'transform 0.2s' }}
+                        onMouseOver={e => e.currentTarget.style.transform = 'translateY(-3px)'}
+                        onMouseOut={e => e.currentTarget.style.transform = 'translateY(0)'}
+                      >
+                        {doc.type?.includes('image') ? (
+                          <div style={{ width: '60px', height: '60px', marginBottom: '0.5rem', borderRadius: '4px', overflow: 'hidden' }}>
+                            <img src={doc.url} alt={doc.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          </div>
+                        ) : (
+                          <FileText size={40} color="#e53e3e" style={{ marginBottom: '0.5rem' }} />
+                        )}
+                        <span style={{ fontSize: '0.75rem', textAlign: 'center', wordBreak: 'break-all', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', width: '100%' }} title={doc.name}>
+                          {doc.name}
+                        </span>
+                      </a>
+                    ))}
+                  </div>
+                ) : (
+                  <p style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.9rem', margin: 0 }}>
+                    אין קבצים שמורים לדמות זו
+                  </p>
+                )}
               </div>
             </div>
           )}
